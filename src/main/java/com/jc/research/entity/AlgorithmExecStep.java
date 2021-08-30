@@ -2,6 +2,8 @@ package com.jc.research.entity;
 
 import lombok.*;
 
+import java.util.Map;
+
 /**
  * @program: constructing-composite-indicators
  * @description:
@@ -11,9 +13,6 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class AlgorithmExecStep {
 
     private Long id;
@@ -23,4 +22,5 @@ public class AlgorithmExecStep {
     private String stepValue;
 
     private int execOrder;
+
 }

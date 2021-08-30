@@ -11,16 +11,13 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class GraphEdge extends Graph {
     /**
-     * 起点id
+     * 起点名称
      */
     private Long sourceID;
     /**
-     * 终点id
+     * 终点名称
      */
     private Long targetID;
 }

@@ -14,9 +14,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 @Deprecated
 public class TierGraphDTO {
 

@@ -1,9 +1,16 @@
 package com.jc.research.entity.DTO;
 
+import com.jc.research.entity.Graph;
+import com.jc.research.entity.GraphEdge;
+import com.jc.research.entity.GraphNode;
 import com.jc.research.indicatorAl.entity.AlgorithmExecResult;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @program: constructing-composite-indicators
@@ -14,8 +21,7 @@ import java.io.Serializable;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Deprecated
-public class CalcResultTierGraphDTO implements Serializable {
+public class CalcResultGraphDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -32,5 +38,6 @@ public class CalcResultTierGraphDTO implements Serializable {
     /**
      * 带有综合指标数值的图对象
      */
-    private TierGraphDTO compIndGraph;
+    private List<GraphNode> compIndGraphNode = new ArrayList<>();
+    private List<GraphEdge> compIndGraphEdge = new ArrayList<>();
 }

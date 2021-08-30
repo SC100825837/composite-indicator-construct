@@ -16,9 +16,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class GraphDTO {
 
     private List<GraphNode> nodes;

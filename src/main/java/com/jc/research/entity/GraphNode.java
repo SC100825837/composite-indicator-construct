@@ -11,9 +11,6 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class GraphNode extends Graph {
 
     private Long id;
@@ -21,4 +18,9 @@ public class GraphNode extends Graph {
      * 标签名
      */
     private String lbName;
+
+    /**
+     * 类别
+     */
+    private int category;
 }

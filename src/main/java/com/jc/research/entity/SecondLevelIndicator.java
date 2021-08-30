@@ -15,9 +15,6 @@ import org.neo4j.ogm.annotation.Property;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 @NodeEntity
 public class SecondLevelIndicator {
 

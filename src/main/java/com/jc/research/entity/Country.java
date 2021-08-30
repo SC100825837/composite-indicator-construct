@@ -1,5 +1,9 @@
 package com.jc.research.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
 /**
@@ -11,11 +15,10 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Country {
 
+    @TableId(value = "id", type = IdType.AUTO)
+//    @JsonSerialize(using= ToStringSerializer.class)
     private Long id;
 
     private String countryName;

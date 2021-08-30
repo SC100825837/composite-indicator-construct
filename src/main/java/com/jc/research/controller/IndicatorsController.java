@@ -1,5 +1,7 @@
 package com.jc.research.controller;
 
+import com.jc.research.entity.DTO.CalcExecParamDTO;
+import com.jc.research.entity.DTO.CalcResultGraphDTO;
 import com.jc.research.entity.DTO.CalcResultTierGraphDTO;
 import com.jc.research.entity.DTO.GraphDTO;
 import com.jc.research.entity.Graph;
@@ -38,12 +40,12 @@ public class IndicatorsController {
 	}
 
 	@PostMapping("/indicatorCalc")
-	public R execIndCalc(@RequestBody List<Map<String, Long>> algorithmAndConstObj) {
-		CalcResultTierGraphDTO calcResultTierGraphDTO = indicatorsService.handleDataAndAlgorithm(algorithmAndConstObj);
-		if (calcResultTierGraphDTO == null) {
-			return R.failed("数据为空");
+	public R execIndCalc(@RequestBody CalcExecParamDTO calcExecParam) {
+		CalcResultGraphDTO calcResultGraphDTO = indicatorsService.handleDataAndAlgorithm(calcExecParam);
+		if (calcResultGraphDTO == null) {
+			return R.failed("数据不存在");
 		}
-		return R.ok(calcResultTierGraphDTO, "计算完成，综合指标数值为：" + calcResultTierGraphDTO.getCompositeIndicator());
+		return R.ok(calcResultGraphDTO, "计算完成，综合指标数值为：" + calcResultGraphDTO.getCompositeIndicator());
 	}
 
 	@GetMapping("/getSecondNodes")

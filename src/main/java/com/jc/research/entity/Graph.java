@@ -14,20 +14,10 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Graph {
     /**
      * 属性
      */
     private Map<String, Object> attributes = new HashMap<>();
-
-    public void setId(Long id) {
-
-    }
-    public void setLbName(String lbName) {
-
-    }
 
 }

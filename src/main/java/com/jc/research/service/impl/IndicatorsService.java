@@ -45,17 +45,43 @@ public class IndicatorsService {
     private CountryService countryService;
 
     /**
-     * 指数图对象的缓存集合
+     * 指数图对象的缓存集合(层级结构)
      * 创建前端规定的节点对象集合，其中key为节点id，value为前端格式节点对象
      */
     @Getter
     private Map<Long, TierGraphDTO> tierGraphNodeMap = new HashMap<>();
 
     /**
+     * 基础图对象的缓存集合(平铺结构)，只包含基础结构的节点
+     * 创建前端规定的节点对象集合，其中key为节点id，value为前端格式节点对象
+     */
+    @Getter
+    private List<GraphNode> graphNodeList = new ArrayList<>();
+    @Getter
+    private List<GraphEdge> graphEdgeList = new ArrayList<>();
+
+    /**
+     * 指数图对象的缓存集合，既包含基础节点，也包含增加的指数节点
+     */
+    @Getter
+    private List<GraphNode> indicatorGraphNodeList = new ArrayList<>();
+    @Getter
+    private List<GraphEdge> indicatorGraphEdgeList = new ArrayList<>();
+
+    /**
      * 记录当前最大的节点id，用来设置带数值的节点id
      */
-    @Deprecated
-    private Long currentMaxNodeId;
+    private Long currentMaxNodeId = 0L;
+
+    /**
+     * 指标节点id计数器
+     */
+    private Long indicatorNodeId = currentMaxNodeId;
+
+    /**
+     * 节点类型
+     */
+    private int category = 0;
 
     /**
      * 校验集合，创建节点时判断该节点或连线是否已创建
@@ -69,6 +95,10 @@ public class IndicatorsService {
     }
 
     public GraphDTO getBaseGraph() {
+        //先从缓存中取数据，如果没有数据则重新构建
+        if (!graphNodeList.isEmpty() && !graphEdgeList.isEmpty()) {
+            return new GraphDTO(graphNodeList, graphEdgeList);
+        }
         Session session = sessionFactory.openSession();
         String cypherString = "MATCH (indicators:CompositeIndicators) <-[rs1:CONSTITUTE]- (fl:First_level_Indicator) <-[rs2:CONSTITUTE]- (sl:Second_level_Indicator)\n" +
                 "return indicators,fl,sl,rs1,rs2";
@@ -88,38 +118,34 @@ public class IndicatorsService {
             RelationshipModel indNodeAndFirstShip = (RelationshipModel) record.get("rs1");
             //二级节点与一节点之间的关系
             RelationshipModel firstAndSecondShip = (RelationshipModel) record.get("rs2");
-            //取出对应的节点id
-            Long indicatorNodeId = indicatorNode.getId();
-            Long firstLevelNodeId = firstLevelNode.getId();
-            Long secondLevelNodeId = secondLevelNode.getId();
 
-			GraphNode node1 = createNode(indicatorNodeId, new GraphNode(), indicatorNode);
+			GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0);
 			if (node1 != null) {
 				nodes.add(node1);
+				//添加到图节点缓存中
+				graphNodeList.add(node1);
 			}
-			GraphNode node2 = createNode(firstLevelNodeId, new GraphNode(), firstLevelNode);
+			GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1);
 			if (node2 != null) {
 				nodes.add(node2);
+                graphNodeList.add(node2);
 			}
-			GraphNode node3 = createNode(secondLevelNodeId, new GraphNode(), secondLevelNode);
+			GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2);
 			if (node3 != null) {
 				nodes.add(node3);
+                graphNodeList.add(node3);
 			}
 
-			Long startNode1 = indNodeAndFirstShip.getStartNode();
-			Long endNode1 = indNodeAndFirstShip.getEndNode();
-			String se1 = startNode1 + "_" + endNode1;
-			GraphEdge edge1 = createEdge(se1, new GraphEdge(), indNodeAndFirstShip, startNode1, endNode1);
+			GraphEdge edge1 = createEdge(new GraphEdge(), indNodeAndFirstShip);
 			if (edge1 != null) {
 				edges.add(edge1);
+				graphEdgeList.add(edge1);
 			}
 
-			Long startNode2 = firstAndSecondShip.getStartNode();
-			Long endNode2 = firstAndSecondShip.getEndNode();
-			String se2 = startNode2 + "_" + endNode2;
-			GraphEdge edge2 = createEdge(se2, new GraphEdge(), firstAndSecondShip, startNode2, endNode2);
+			GraphEdge edge2 = createEdge(new GraphEdge(), firstAndSecondShip);
 			if (edge2 != null) {
 				edges.add(edge2);
+                graphEdgeList.add(edge2);
 			}
 
         });
@@ -127,19 +153,24 @@ public class IndicatorsService {
         return new GraphDTO(nodes, edges);
     }
 
+
 	/**
 	 * 创建节点
-	 * @param nodeId
 	 * @param graphNode
 	 * @param nodeModel
 	 * @return
 	 */
-    private GraphNode createNode(Object nodeId, GraphNode graphNode, NodeModel nodeModel) {
-        if (!check(nodeId)) {
+    private GraphNode createNode(GraphNode graphNode, NodeModel nodeModel, int category) {
+        if (!check(nodeModel.getId())) {
             return null;
+        }
+        if (currentMaxNodeId <= nodeModel.getId()) {
+            currentMaxNodeId = nodeModel.getId();
+            indicatorNodeId = currentMaxNodeId;
         }
         graphNode.setId(nodeModel.getId());
         graphNode.setLbName(nodeModel.getLabels()[0]);
+        graphNode.setCategory(category);
         List<Property<String, Object>> propertyList = nodeModel.getPropertyList();
         for (Property<String, Object> property : propertyList) {
             graphNode.getAttributes().put(property.getKey(), property.getValue());
@@ -149,19 +180,18 @@ public class IndicatorsService {
 
 	/**
 	 * 创建连线
-	 * @param nodeId
 	 * @param graphEdge
 	 * @param relationshipModel
-	 * @param start
-	 * @param end
 	 * @return
 	 */
-    private GraphEdge createEdge(Object nodeId, GraphEdge graphEdge, RelationshipModel relationshipModel, Long start, Long end) {
-        if (!check(nodeId)) {
+    private GraphEdge createEdge(GraphEdge graphEdge, RelationshipModel relationshipModel) {
+        Long startNodeId = relationshipModel.getStartNode();
+        Long endNodeId = relationshipModel.getEndNode();
+        if (!check(startNodeId + "_" + endNodeId)) {
             return null;
         }
-		graphEdge.setSourceID(start);
-		graphEdge.setTargetID(end);
+		graphEdge.setSourceID(relationshipModel.getStartNode());
+		graphEdge.setTargetID(relationshipModel.getEndNode());
         List<Property<String, Object>> shipPropertyList2 = relationshipModel.getPropertyList();
         for (Property<String, Object> property : shipPropertyList2) {
 			graphEdge.getAttributes().put(property.getKey(), property.getValue());
@@ -181,6 +211,129 @@ public class IndicatorsService {
         } else {
             return false;
         }
+    }
+
+    /**
+     * 处理算法和数据
+     * @param calcExecParam
+     * @return
+     */
+    public CalcResultGraphDTO handleDataAndAlgorithm(CalcExecParamDTO calcExecParam) {
+        //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
+        Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
+        //通过算法门面执行算法计算
+        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0]);
+        //得到权重计算的最终结果，即权重值数组
+        double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
+
+        Country country = (Country) dataAndAlgorithms[1];
+        //取出国家对象中的各基础指标值
+        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
+        //初始化综合指标
+        double compositeIndicator = 0L;
+        int count = 0;
+        //计算综合指标数值
+        for (Object baseIndicatorName : baseIndicatorDataMap.keySet()) {
+            compositeIndicator += Double.parseDouble(baseIndicatorDataMap.get(baseIndicatorName).toString()) * baseIndicatorWeight[count++];
+        }
+        //处理小数点位数
+        compositeIndicator = handleFractional(2, compositeIndicator);
+
+        //构建带有指标值的图数据
+        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator);
+
+        CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
+        calcResultGraphDTO.setAlgorithmExecResult(execResult);
+        calcResultGraphDTO.setCompositeIndicator(compositeIndicator);
+        calcResultGraphDTO.getCompIndGraphNode().addAll(indicatorGraphNodeList);
+        calcResultGraphDTO.getCompIndGraphEdge().addAll(indicatorGraphEdgeList);
+
+        return calcResultGraphDTO;
+
+    }
+
+    /**
+     * 构建带有指标值的图数据
+     * @param baseIndicatorDataMap
+     * @param compositeIndicator
+     */
+    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator) {
+        //先从缓存中取数据，如果没有数据则重新构建
+        if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty()) {
+            return;
+        }
+        indicatorGraphNodeList.addAll(graphNodeList);
+        indicatorGraphEdgeList.addAll(graphEdgeList);
+        for (GraphNode graphNode : graphNodeList) {
+            //找到类别为2的层级节点，也就是子叶节点
+            if (graphNode.getCategory() == 2) {
+                //创建指标节点，并设置属性
+                GraphNode baseIndicatorDataNode = new GraphNode();
+                baseIndicatorDataNode.setId(++indicatorNodeId);
+                baseIndicatorDataNode.getAttributes().put("baseIndicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
+                baseIndicatorDataNode.setCategory(3);
+                baseIndicatorDataNode.setLbName("基础指标值");
+                //创建连线，并设置属性，基础指标节点由指标值指向 通用指标名称
+                GraphEdge graphEdge = new GraphEdge();
+                graphEdge.setSourceID(baseIndicatorDataNode.getId());
+                graphEdge.setTargetID(graphNode.getId());
+                indicatorGraphNodeList.add(baseIndicatorDataNode);
+                //添加到新创建的连线放置到连线集合缓存中
+                indicatorGraphEdgeList.add(graphEdge);
+            }
+        }
+        //创建综合指标值节点，并设置属性
+        GraphNode compIndGraphNode = new GraphNode();
+        compIndGraphNode.setId(++indicatorNodeId);
+        compIndGraphNode.getAttributes().put("CompositeIndicatorValue", String.valueOf(compositeIndicator));
+        compIndGraphNode.setLbName("综合指标值");
+        compIndGraphNode.setCategory(4);
+        //创建连线，并设置属性，综合指标值节点由 指标值 指向 通用指标名称
+        GraphEdge graphEdge = new GraphEdge();
+        graphEdge.setSourceID(compIndGraphNode.getId());
+        graphEdge.setTargetID(graphNodeList.get(0).getId());
+
+        //将综合指标值节点放入缓存
+        indicatorGraphNodeList.add(compIndGraphNode);
+        //将新创建的综合指标值和通用综合指标名称的连线关系放入缓存
+        indicatorGraphEdgeList.add(graphEdge);
+
+        //指标id计数器重置为原图数据的最大id
+        indicatorNodeId = currentMaxNodeId;
+    }
+
+    /**
+     * 初始化算法数据和构造对象数据
+     *
+     * @param calcExecParam
+     * @return
+     */
+    private Object[] initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) {
+        Map<String, Long> algorithmIdMap = calcExecParam.getAlgorithms().getAllAlgorithmIds();
+        List<Algorithm> algorithms = algorithmService.listByIds(algorithmIdMap.values());
+
+        Map<String, String> algorithmMap = new HashMap<>();
+        for (Algorithm algorithm : algorithms) {
+            algorithmMap.put(algorithm.getStepName(), algorithm.getFullClassName() == null ? "" : algorithm.getFullClassName());
+        }
+        Country country = countryService.getById(calcExecParam.getIndicatorConstructTarget().getId());
+        if (country == null) {
+            return null;
+        }
+        return new Object[]{algorithmMap, country};
+    }
+
+    /**
+     * 按照规定小数点位数处理小数
+     *
+     * @param digit
+     * @param origin
+     * @return
+     */
+    private double handleFractional(int digit, double origin) {
+        NumberFormat numberInstance = NumberFormat.getNumberInstance();
+        numberInstance.setMaximumFractionDigits(digit);
+        return Double.parseDouble(numberInstance.format(origin));
     }
 
     /**
@@ -282,51 +435,14 @@ public class IndicatorsService {
     }
 
     /**
-     * 处理算法和数据
-     *
-     * @param algorithmAndConstObj
-     * @return
-     */
-    public CalcResultTierGraphDTO handleDataAndAlgorithm(List<Map<String, Long>> algorithmAndConstObj) {
-        //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
-        Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(algorithmAndConstObj);
-        //通过算法门面执行算法计算
-        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0]);
-        //得到权重计算的最终结果，即权重值数组
-        double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
-
-        Country country = (Country) dataAndAlgorithms[1];
-        //取出国家对象中的各基础指标值
-        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
-        //初始化综合指标
-        double compositeIndicator = 0L;
-        int count = 0;
-        //计算综合指标数值
-        for (Object baseIndicatorName : baseIndicatorDataMap.keySet()) {
-            compositeIndicator += Double.parseDouble(baseIndicatorDataMap.get(baseIndicatorName).toString()) * baseIndicatorWeight[count++];
-        }
-        //处理小数点位数
-        compositeIndicator = handleFractional(2, compositeIndicator);
-
-        TierGraphDTO compIndGraph = execIndCalcGraph(baseIndicatorDataMap, compositeIndicator);
-
-        CalcResultTierGraphDTO calcResultTierGraphDTO = new CalcResultTierGraphDTO();
-        calcResultTierGraphDTO.setAlgorithmExecResult(execResult);
-        calcResultTierGraphDTO.setCompositeIndicator(compositeIndicator);
-        calcResultTierGraphDTO.setCompIndGraph(compIndGraph);
-
-        return calcResultTierGraphDTO;
-
-    }
-
-    /**
      * 将计算结果和基础指标数值加入图数据
      *
      * @param baseIndicatorDataMap
      * @param compositeIndicator
      * @return
      */
-    private TierGraphDTO execIndCalcGraph(Map baseIndicatorDataMap, double compositeIndicator) {
+    @Deprecated
+    private TierGraphDTO execIndCalcTierGraph(Map baseIndicatorDataMap, double compositeIndicator) {
         for (Long graphNodeId : tierGraphNodeMap.keySet()) {
             TierGraphDTO tierGraphDTO = tierGraphNodeMap.get(graphNodeId);
             if (tierGraphDTO.getCategory() == 2) {
@@ -339,37 +455,6 @@ public class IndicatorsService {
         compIndGraph.setName(String.valueOf(compositeIndicator));
         compIndGraph.getChildren().add(tierGraphNodeMap.get(0L));
         return compIndGraph;
-    }
-
-    /**
-     * 初始化算法数据和构造对象数据
-     *
-     * @param algorithmAndConstObj
-     * @return
-     */
-    private Object[] initAlgorithmAndConstructObj(List<Map<String, Long>> algorithmAndConstObj) {
-        Map<String, Long> algorithmIdMap = algorithmAndConstObj.get(0);
-        List<Algorithm> algorithms = algorithmService.listByIds(algorithmIdMap.values());
-
-        Map<String, String> algorithmMap = new HashMap<>();
-        for (Algorithm algorithm : algorithms) {
-            algorithmMap.put(algorithm.getStepName(), algorithm.getFullClassName() == null ? "" : algorithm.getFullClassName());
-        }
-        Country country = countryService.getById(algorithmAndConstObj.get(1).get("constructObjId"));
-        return new Object[]{algorithmMap, country};
-    }
-
-    /**
-     * 按照规定小数点位数处理小数
-     *
-     * @param digit
-     * @param origin
-     * @return
-     */
-    private double handleFractional(int digit, double origin) {
-        NumberFormat numberInstance = NumberFormat.getNumberInstance();
-        numberInstance.setMaximumFractionDigits(digit);
-        return Double.parseDouble(numberInstance.format(origin));
     }
 
 }
