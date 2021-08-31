@@ -88,6 +88,11 @@ public class IndicatorsService {
      */
     Map<Object, String> checkExitMap = new HashMap<>();
 
+    /**
+     * 构建对象id缓存，如果实时数据和缓存不同则更新数据
+     */
+    private Long constructObjId = 0L;
+
     public List<SecondLevelIndicator> getSecondNodesByFirstNodeName() {
         List<SecondLevelIndicator> secondNodes = indicatorsRepository.getSecondNodesByFirstNodeName();
         System.out.println(secondNodes);
@@ -240,7 +245,7 @@ public class IndicatorsService {
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         //构建带有指标值的图数据
-        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator);
+        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, country.getId());
 
         CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
         calcResultGraphDTO.setAlgorithmExecResult(execResult);
@@ -257,20 +262,25 @@ public class IndicatorsService {
      * @param baseIndicatorDataMap
      * @param compositeIndicator
      */
-    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator) {
+    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator, Long id) {
         //先从缓存中取数据，如果没有数据则重新构建
-        if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty()) {
+        if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty() && constructObjId.equals(id)) {
             return;
+        }
+        if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty()) {
+            indicatorGraphNodeList.clear();
+            indicatorGraphEdgeList.clear();
         }
         indicatorGraphNodeList.addAll(graphNodeList);
         indicatorGraphEdgeList.addAll(graphEdgeList);
+        constructObjId = id;
         for (GraphNode graphNode : graphNodeList) {
             //找到类别为2的层级节点，也就是子叶节点
             if (graphNode.getCategory() == 2) {
                 //创建指标节点，并设置属性
                 GraphNode baseIndicatorDataNode = new GraphNode();
                 baseIndicatorDataNode.setId(++indicatorNodeId);
-                baseIndicatorDataNode.getAttributes().put("baseIndicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
+                baseIndicatorDataNode.getAttributes().put("indicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
                 baseIndicatorDataNode.setCategory(3);
                 baseIndicatorDataNode.setLbName("基础指标值");
                 //创建连线，并设置属性，基础指标节点由指标值指向 通用指标名称
@@ -285,7 +295,7 @@ public class IndicatorsService {
         //创建综合指标值节点，并设置属性
         GraphNode compIndGraphNode = new GraphNode();
         compIndGraphNode.setId(++indicatorNodeId);
-        compIndGraphNode.getAttributes().put("CompositeIndicatorValue", String.valueOf(compositeIndicator));
+        compIndGraphNode.getAttributes().put("indicatorValue", String.valueOf(compositeIndicator));
         compIndGraphNode.setLbName("综合指标值");
         compIndGraphNode.setCategory(4);
         //创建连线，并设置属性，综合指标值节点由 指标值 指向 通用指标名称
