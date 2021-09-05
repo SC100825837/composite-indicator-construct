@@ -36,7 +36,12 @@ public class IndicatorsController {
 
 	@PostMapping("/indicatorCalc")
 	public R execIndCalc(@RequestBody CalcExecParamDTO calcExecParam) {
-		CalcResultGraphDTO calcResultGraphDTO = indicatorsServiceImpl.handleDataAndAlgorithm(calcExecParam);
+		CalcResultGraphDTO calcResultGraphDTO;
+		try {
+			calcResultGraphDTO = indicatorsServiceImpl.handleDataAndAlgorithm(calcExecParam);
+		} catch (Exception e) {
+			return R.failed(e.getCause());
+		}
 		if (calcResultGraphDTO == null) {
 			return R.failed("数据不存在");
 		}

@@ -232,7 +232,10 @@ public class IndicatorsServiceImpl {
      * @param calcExecParam
      * @return
      */
-    public CalcResultGraphDTO handleDataAndAlgorithm(CalcExecParamDTO calcExecParam) {
+    public CalcResultGraphDTO handleDataAndAlgorithm(CalcExecParamDTO calcExecParam) throws Exception {
+        if (graphNodeList.isEmpty() || graphEdgeList.isEmpty()) {
+            throw new Exception("数据异常，请尝试刷新页面");
+        }
         //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
         Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
         //通过算法门面执行算法计算
@@ -266,7 +269,7 @@ public class IndicatorsServiceImpl {
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         //构建带有指标值的图数据
-        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId());
+        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId(), weightMap);
 
         CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
         calcResultGraphDTO.setAlgorithmExecResult(execResult);
@@ -283,7 +286,7 @@ public class IndicatorsServiceImpl {
      * @param baseIndicatorDataMap
      * @param compositeIndicator
      */
-    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator, Long id) {
+    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator, Long id, Map<String, Double> weightMap) {
         //先从缓存中取数据，如果没有数据则重新构建
         if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty() && constructObjId.equals(id)) {
             return;
@@ -301,24 +304,39 @@ public class IndicatorsServiceImpl {
                 //创建指标节点，并设置属性
                 GraphNode baseIndicatorDataNode = new GraphNode();
                 baseIndicatorDataNode.setId(++indicatorNodeId);
-                baseIndicatorDataNode.getAttributes().put("indicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
+                baseIndicatorDataNode.getAttributes().put("indicatorValue", "基础指标值：" + baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
                 baseIndicatorDataNode.setCategory(3);
                 baseIndicatorDataNode.setLbName("基础指标值");
+
+                //创建权重节点，并设置属性
+                GraphNode weightNode = new GraphNode();
+                weightNode.setId(++indicatorNodeId);
+                weightNode.getAttributes().put("indicatorValue", "权重：" + handleFractional(2, weightMap.get(graphNode.getAttributes().get("name").toString())));
+                weightNode.setCategory(4);
+                weightNode.setLbName("权重值");
+
                 //创建连线，并设置属性，基础指标节点由指标值指向 通用指标名称
-                GraphEdge graphEdge = new GraphEdge();
-                graphEdge.setSourceID(baseIndicatorDataNode.getId());
-                graphEdge.setTargetID(graphNode.getId());
+                GraphEdge indicatorGraphEdge = new GraphEdge();
+                indicatorGraphEdge.setSourceID(baseIndicatorDataNode.getId());
+                indicatorGraphEdge.setTargetID(graphNode.getId());
+                //创建连线，并设置属性，权重节点 指向 通用指标名称
+                GraphEdge weightGraphEdge = new GraphEdge();
+                weightGraphEdge.setSourceID(weightNode.getId());
+                weightGraphEdge.setTargetID(graphNode.getId());
+
                 indicatorGraphNodeList.add(baseIndicatorDataNode);
+                indicatorGraphNodeList.add(weightNode);
                 //添加到新创建的连线放置到连线集合缓存中
-                indicatorGraphEdgeList.add(graphEdge);
+                indicatorGraphEdgeList.add(indicatorGraphEdge);
+                indicatorGraphEdgeList.add(weightGraphEdge);
             }
         }
         //创建综合指标值节点，并设置属性
         GraphNode compIndGraphNode = new GraphNode();
         compIndGraphNode.setId(++indicatorNodeId);
-        compIndGraphNode.getAttributes().put("indicatorValue", String.valueOf(compositeIndicator));
+        compIndGraphNode.getAttributes().put("indicatorValue", "综合指标值：" + compositeIndicator);
         compIndGraphNode.setLbName("综合指标值");
-        compIndGraphNode.setCategory(4);
+        compIndGraphNode.setCategory(5);
         //创建连线，并设置属性，综合指标值节点由 指标值 指向 通用指标名称
         GraphEdge graphEdge = new GraphEdge();
         graphEdge.setSourceID(compIndGraphNode.getId());
@@ -339,7 +357,7 @@ public class IndicatorsServiceImpl {
      * @param calcExecParam
      * @return
      */
-    private Object[] initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) {
+    private Object[] initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) throws Exception {
         Map<String, Long> algorithmIdMap = calcExecParam.getAlgorithms().getAllAlgorithmIds();
         List<Algorithm> algorithms = algorithmService.listByIds(algorithmIdMap.values());
 
@@ -367,7 +385,7 @@ public class IndicatorsServiceImpl {
         }
 
         if (targetTaiObj.getId() == null) {
-            throw new NullPointerException("没有这个构件对象");
+            throw new Exception("没有这个构件对象");
         }
         //遍历对象属性，将指标属性及属性值放入map，用于后续计算
         Map<String, Double> indicatorValueMap = new HashMap<>();

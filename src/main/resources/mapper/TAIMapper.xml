@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jc.research.mapper.TAIMapper">
+
+    <resultMap id="countryMap" type="com.jc.research.entity.Country">
+        <id property="id" column="id"/>
+        <result property="countryName" column="country_name" jdbcType="VARCHAR"/>
+        <result property="baseIndicator" column="base_indicator" jdbcType="VARCHAR"/>
+        <result property="compositeIndicator" column="composite_indicator" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getAllCountryList" resultMap="countryMap">
+        SELECT id, country_name FROM technology_achievement_index
+    </select>
+
+</mapper>
