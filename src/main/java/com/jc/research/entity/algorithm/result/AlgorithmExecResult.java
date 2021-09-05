@@ -1,6 +1,4 @@
-package com.jc.research.indicatorAl.entity;
-
-import com.jc.research.indicatorAl.entity.AlgorithmProcessResult.ProcessResult;
+package com.jc.research.entity.algorithm.result;
 
 import java.util.Arrays;
 

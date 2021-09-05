@@ -1,15 +1,15 @@
 package com.jc.research.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Maps;
 import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
-import com.jc.research.indicatorAl.algorithm.Algorithm;
-import com.jc.research.indicatorAl.entity.AlgorithmExecResult;
+import com.jc.research.entity.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
 import com.jc.research.mapper.IndicatorsRepository;
 import com.jc.research.service.AlgorithmService;
 import com.jc.research.service.CountryService;
+import com.jc.research.service.TAIService;
 import lombok.Getter;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.model.Result;
@@ -20,6 +20,7 @@ import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.*;
 
@@ -30,7 +31,7 @@ import java.util.*;
  * @create: 2021-06-23 15:42
  **/
 @Service
-public class IndicatorsService {
+public class IndicatorsServiceImpl {
 
     @Autowired
     private SessionFactory sessionFactory;
@@ -43,6 +44,9 @@ public class IndicatorsService {
 
     @Autowired
     private CountryService countryService;
+
+    @Autowired
+    private TAIService taiService;
 
     /**
      * 指数图对象的缓存集合(层级结构)
@@ -86,7 +90,12 @@ public class IndicatorsService {
     /**
      * 校验集合，创建节点时判断该节点或连线是否已创建
      */
-    Map<Object, String> checkExitMap = new HashMap<>();
+    private Map<Object, String> checkExitMap = new HashMap<>();
+
+    /**
+     * 科技成就指数数据缓存
+     */
+    private List<TechnologyAchievementIndex> taiDataList;
 
     /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
@@ -227,25 +236,37 @@ public class IndicatorsService {
         //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
         Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
         //通过算法门面执行算法计算
-        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0]);
+        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (double[][]) dataAndAlgorithms[2]);
         //得到权重计算的最终结果，即权重值数组
         double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
+        //权重map，key为指标名称，value为权重值
+        Map<String, Double> weightMap = new HashMap<>();
+        TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
+        Field[] fields = tai.getClass().getDeclaredFields();
+        int weightArrIndex = 0;
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (field.getName().equals("id") || field.getName().equals("countryName")) {
+                continue;
+            }
+            weightMap.put(field.getName(), baseIndicatorWeight[weightArrIndex++]);
+        }
 
-        Country country = (Country) dataAndAlgorithms[1];
+//        Country country = (Country) dataAndAlgorithms[1];
         //取出国家对象中的各基础指标值
-        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
+//        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
+        Map<String, Double> baseIndicatorDataMap = (Map<String, Double>) dataAndAlgorithms[1];
         //初始化综合指标
         double compositeIndicator = 0L;
-        int count = 0;
         //计算综合指标数值
         for (Object baseIndicatorName : baseIndicatorDataMap.keySet()) {
-            compositeIndicator += Double.parseDouble(baseIndicatorDataMap.get(baseIndicatorName).toString()) * baseIndicatorWeight[count++];
+            compositeIndicator += baseIndicatorDataMap.get(baseIndicatorName.toString()) * weightMap.get(baseIndicatorName.toString());
         }
         //处理小数点位数
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         //构建带有指标值的图数据
-        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, country.getId());
+        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId());
 
         CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
         calcResultGraphDTO.setAlgorithmExecResult(execResult);
@@ -313,7 +334,7 @@ public class IndicatorsService {
     }
 
     /**
-     * 初始化算法数据和构造对象数据
+     * 初始化算法数、和构造对象数据、数据集
      *
      * @param calcExecParam
      * @return
@@ -326,11 +347,44 @@ public class IndicatorsService {
         for (Algorithm algorithm : algorithms) {
             algorithmMap.put(algorithm.getStepName(), algorithm.getFullClassName() == null ? "" : algorithm.getFullClassName());
         }
-        Country country = countryService.getById(calcExecParam.getIndicatorConstructTarget().getId());
+        /*Country country = countryService.getById(calcExecParam.getIndicatorConstructTarget().getId());
         if (country == null) {
             return null;
+        }*/
+        TechnologyAchievementIndex targetTaiObj = new TechnologyAchievementIndex();
+        //缓存中没有数据集的数据时从数据库取出并放入缓存
+        if (taiDataList == null || taiDataList.isEmpty()) {
+            taiDataList = taiService.list();
         }
-        return new Object[]{algorithmMap, country};
+        double[][] taiDataRows = new double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
+        for (int i = 0; i < taiDataList.size(); i++) {
+            if (taiDataList.get(i).getId().equals(calcExecParam.getIndicatorConstructTarget().getId())) {
+                targetTaiObj = taiDataList.get(i);
+            }
+            double[] row = {taiDataList.get(i).getPatents(), taiDataList.get(i).getRoyalties(), taiDataList.get(i).getInternet(), taiDataList.get(i).getExports(),
+                    taiDataList.get(i).getTelephones(), taiDataList.get(i).getElectricity(), taiDataList.get(i).getSchooling(), taiDataList.get(i).getUniversity()};
+            taiDataRows[i] = row;
+        }
+
+        if (targetTaiObj.getId() == null) {
+            throw new NullPointerException("没有这个构件对象");
+        }
+        //遍历对象属性，将指标属性及属性值放入map，用于后续计算
+        Map<String, Double> indicatorValueMap = new HashMap<>();
+
+        Field[] fields = targetTaiObj.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (field.getName().equals("id") || field.getName().equals("countryName")) {
+                continue;
+            }
+            try {
+                indicatorValueMap.put(field.getName(), (Double) field.get(targetTaiObj));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return new Object[]{algorithmMap, indicatorValueMap, taiDataRows};
     }
 
     /**
@@ -351,7 +405,7 @@ public class IndicatorsService {
      *
      * @return
      */
-    @Deprecated
+    /*@Deprecated
     public TierGraphDTO getCompIndNodeByTier() {
         Session session = sessionFactory.openSession();
         String cypherString = "MATCH (indicators:CompositeIndicators) <-[:CONSTITUTE]- (fl:First_level_Indicator) <-[:CONSTITUTE]- (sl:Second_level_Indicator)\n" +
@@ -442,7 +496,7 @@ public class IndicatorsService {
             tierGraphDTO.setChildNum(tierGraphDTO.getChildren().size());
         }
         return tierGraphNodeMap.get(rootNodeId[0]);
-    }
+    }*/
 
     /**
      * 将计算结果和基础指标数值加入图数据
@@ -451,7 +505,7 @@ public class IndicatorsService {
      * @param compositeIndicator
      * @return
      */
-    @Deprecated
+    /*@Deprecated
     private TierGraphDTO execIndCalcTierGraph(Map baseIndicatorDataMap, double compositeIndicator) {
         for (Long graphNodeId : tierGraphNodeMap.keySet()) {
             TierGraphDTO tierGraphDTO = tierGraphNodeMap.get(graphNodeId);
@@ -465,6 +519,6 @@ public class IndicatorsService {
         compIndGraph.setName(String.valueOf(compositeIndicator));
         compIndGraph.getChildren().add(tierGraphNodeMap.get(0L));
         return compIndGraph;
-    }
+    }*/
 
 }

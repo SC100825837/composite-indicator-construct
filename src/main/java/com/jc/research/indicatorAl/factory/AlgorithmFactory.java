@@ -1,6 +1,6 @@
 package com.jc.research.indicatorAl.factory;
 
-import com.jc.research.indicatorAl.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.Algorithm;
 
 import java.util.HashMap;
 import java.util.Map;

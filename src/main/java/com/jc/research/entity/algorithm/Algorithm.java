@@ -1,4 +1,4 @@
-package com.jc.research.indicatorAl.algorithm;
+package com.jc.research.entity.algorithm;
 
 import lombok.*;
 import org.springframework.data.annotation.Transient;
@@ -41,6 +41,10 @@ public class Algorithm {
      * @return
      */
     public <T> T exec() {
+        return null;
+    }
+
+    public <T> T exec(double[][] matrix) {
         return null;
     }
 

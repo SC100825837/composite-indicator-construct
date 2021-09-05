@@ -1,11 +1,10 @@
 package com.jc.research.controller;
 
 import com.jc.research.entity.AlgorithmExecStep;
-import com.jc.research.indicatorAl.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.Algorithm;
 import com.jc.research.service.AlgorithmService;
 import com.jc.research.util.R;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

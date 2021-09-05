@@ -1,8 +1,9 @@
-package com.jc.research.indicatorAl.algorithm;
+package com.jc.research.entity.algorithm.context;
 
-import com.jc.research.indicatorAl.algorithmAnnotation.ContainProcessResult;
-import com.jc.research.indicatorAl.entity.AlgorithmExecResult;
-import com.jc.research.indicatorAl.entity.AlgorithmProcessResult.ProcessResult;
+import com.jc.research.entity.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
+import com.jc.research.util.ContainProcessResult;
+import com.jc.research.entity.algorithm.result.ProcessResult;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -24,8 +25,14 @@ public class AlgorithmContext {
      */
     private Algorithm[] algorithmChainList;
 
-    public AlgorithmContext(Map<String, Algorithm> algorithmInstanceMap) {
+    /**
+     * 数据输入源，二维数组表示矩阵
+     */
+    private double[][] originMatrix;
+
+    public AlgorithmContext(Map<String, Algorithm> algorithmInstanceMap, double[][] originMatrix) {
         this.algorithmInstanceMap = algorithmInstanceMap;
+        this.originMatrix = originMatrix;
         this.algorithmChainList = buildAlgorithmChain();
     }
 
@@ -52,7 +59,7 @@ public class AlgorithmContext {
         //获取算法结果对象的类对象
         Class<? extends AlgorithmExecResult> aClass = algorithmExecResult.getClass();
 
-        double[][] matrix;
+        double[][] matrix = originMatrix;
         //按照顺讯遍历算法链
         for (int i = 0; i < this.algorithmChainList.length; i++) {
             //如果有的步骤省略了，那么这步骤对应的算法可能为空
@@ -66,13 +73,13 @@ public class AlgorithmContext {
                 field.setAccessible(true);
                 //如果被注解标注，则说明该算法具有过程结果，该方法的返回值是个对象不是二维数组
                 if (this.algorithmChainList[i].getClass().isAnnotationPresent(ContainProcessResult.class)) {
-                    ProcessResult result = this.algorithmChainList[i].exec();
+                    ProcessResult result = this.algorithmChainList[i].exec(matrix);
                     field.set(algorithmExecResult, result);
                     if(i < this.algorithmChainList.length) {
                         matrix = result.getFinalResult();
                     }
                 } else {
-                    matrix = this.algorithmChainList[i].exec();
+                    matrix = this.algorithmChainList[i].exec(matrix);
                     field.set(algorithmExecResult, matrix);
                 }
             } catch (Exception e) {

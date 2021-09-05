@@ -2,17 +2,12 @@ package com.jc.research.controller;
 
 import com.jc.research.entity.DTO.CalcExecParamDTO;
 import com.jc.research.entity.DTO.CalcResultGraphDTO;
-import com.jc.research.entity.DTO.CalcResultTierGraphDTO;
 import com.jc.research.entity.DTO.GraphDTO;
-import com.jc.research.entity.Graph;
 import com.jc.research.service.AlgorithmService;
-import com.jc.research.service.impl.IndicatorsService;
+import com.jc.research.service.impl.IndicatorsServiceImpl;
 import com.jc.research.util.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @program: neo4j
@@ -25,14 +20,14 @@ import java.util.Map;
 public class IndicatorsController {
 
 	@Autowired
-	private IndicatorsService indicatorsService;
+	private IndicatorsServiceImpl indicatorsServiceImpl;
 
 	@Autowired
 	private AlgorithmService algorithmService;
 
 	@GetMapping("/getBaseGraph")
 	public R getBaseGraph() {
-		GraphDTO baseGraph = indicatorsService.getBaseGraph();
+		GraphDTO baseGraph = indicatorsServiceImpl.getBaseGraph();
 		if (baseGraph == null) {
 			return R.failed("数据为空");
 		}
@@ -41,7 +36,7 @@ public class IndicatorsController {
 
 	@PostMapping("/indicatorCalc")
 	public R execIndCalc(@RequestBody CalcExecParamDTO calcExecParam) {
-		CalcResultGraphDTO calcResultGraphDTO = indicatorsService.handleDataAndAlgorithm(calcExecParam);
+		CalcResultGraphDTO calcResultGraphDTO = indicatorsServiceImpl.handleDataAndAlgorithm(calcExecParam);
 		if (calcResultGraphDTO == null) {
 			return R.failed("数据不存在");
 		}
@@ -50,7 +45,7 @@ public class IndicatorsController {
 
 	@GetMapping("/getSecondNodes")
 	public void getSecondNodesByFirstNodeName() {
-		indicatorsService.getSecondNodesByFirstNodeName();
+		indicatorsServiceImpl.getSecondNodesByFirstNodeName();
 	}
 
 }

@@ -1,6 +1,6 @@
 package com.jc.research.entity.DTO;
 
-import com.jc.research.indicatorAl.entity.AlgorithmExecResult;
+import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import lombok.*;
 
 import java.io.Serializable;

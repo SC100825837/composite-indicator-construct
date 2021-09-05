@@ -1,4 +1,4 @@
-package com.jc.research.indicatorAl.algorithm;
+package com.jc.research.entity.algorithm;
 
 /**
  * @program: constructing-composite-indicators
@@ -6,9 +6,10 @@ package com.jc.research.indicatorAl.algorithm;
  * @author: SunChao
  * @create: 2021-08-17 16:08
  **/
+@Deprecated
 public enum AlgorithmDB {
-    FACTOR_ANALYSIS("com.jc.research.indicatorAl.algorithm.FactorAnalysis", "com.jc.research.indicatorAl.entity.AlgorithmProcessResult.FactorAnalysisPR"),
-    Z_SCORES("com.jc.research.indicatorAl.algorithm.ZScores", ""),
+    FACTOR_ANALYSIS("com.jc.research.entity.algorithm.FactorAnalysis", "com.jc.research.entity.algorithm.result.FactorAnalysisPR"),
+    Z_SCORES("com.jc.research.entity.algorithm.ZScores", ""),
     TO_SELECT("", "");
 
     private String value = "";

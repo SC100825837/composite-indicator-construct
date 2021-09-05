@@ -1,4 +1,4 @@
-package com.jc.research.indicatorAl.config;
+package com.jc.research.config;
 
 import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,9 +1,8 @@
 package com.jc.research.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jc.research.entity.AlgorithmExecStep;
-import com.jc.research.indicatorAl.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.Algorithm;
 import com.jc.research.mapper.AlgorithmExecStepMapper;
 import com.jc.research.mapper.AlgorithmMapper;
 import com.jc.research.service.AlgorithmService;

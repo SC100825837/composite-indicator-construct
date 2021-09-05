@@ -1,8 +1,9 @@
-package com.jc.research.indicatorAl.algorithm;
+package com.jc.research.entity.algorithm;
 
-import com.jc.research.indicatorAl.algorithmAnnotation.ContainProcessResult;
-import com.jc.research.indicatorAl.entity.AlgorithmProcessResult.FactorAnalysisPR;
-import com.jc.research.indicatorAl.entity.AlgorithmProcessResult.ProcessResult;
+import com.jc.research.entity.TechnologyAchievementIndex;
+import com.jc.research.util.ContainProcessResult;
+import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
+import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
 import lombok.Getter;
@@ -11,7 +12,10 @@ import org.springframework.data.annotation.Transient;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @program: constructing-composite-indicators
@@ -32,11 +36,17 @@ public class FactorAnalysis extends Algorithm {
     @Transient
     private String fullClassName = "";
 
-    @Override
-    public ProcessResult exec() {
-//        String doublesStr = Arrays.deepToString(matrix);
+    /*private Map<String, Double> weightMap;
 
-        String[] pyArgs = {"F:/Python/workspace/py_run_on_java/venv/Scripts/python", "F:/Python/workspace/py_run_on_java/FactorAnalysis.py"};
+    public FactorAnalysis(Map<String, Double> indicatorMap) {
+        this.weightMap = indicatorMap;
+    }*/
+
+    @Override
+    public ProcessResult exec(double[][] matrix) {
+        String doublesStr = Arrays.deepToString(matrix);
+
+        String[] pyArgs = {"F:/Python/project/composite-indicator-construct/venv/Scripts/python", "F:/Python/project/composite-indicator-construct/FactorAnalysis.py", doublesStr};
         String calcResultLine = "";
         StringBuilder copyResultStr = new StringBuilder();
         FactorAnalysisPR factorAnalysisPR = new FactorAnalysisPR();
@@ -65,6 +75,19 @@ public class FactorAnalysis extends Algorithm {
         double[][] weight = AlgorithmUtil.toDoubleArray(resultStrArr[2]);
         factorAnalysisPR.setIndicatorWeight(weight);
         //设置最终结果
+        /*TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
+        Field[] fields = tai.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (field.getName().equals("id") || field.getName().equals("countryName")) {
+                continue;
+            }
+            try {
+                weightMap.put(field.getName(), (Double) field.get(tai));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }*/
         factorAnalysisPR.setFinalResult(weight);
         return factorAnalysisPR;
     }

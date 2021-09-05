@@ -23,7 +23,7 @@
 
 <mapper namespace="com.jc.research.mapper.AlgorithmMapper">
 
-    <resultMap id="algorithmMap" type="com.jc.research.indicatorAl.algorithm.Algorithm">
+    <resultMap id="algorithmMap" type="com.jc.research.entity.algorithm.Algorithm">
         <id property="id" column="id"/>
         <result property="algorithmName" column="algorithm_name" jdbcType="VARCHAR"/>
         <result property="displayName" column="display_name" jdbcType="VARCHAR"/>

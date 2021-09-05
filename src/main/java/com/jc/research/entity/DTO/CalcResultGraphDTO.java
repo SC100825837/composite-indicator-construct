@@ -1,9 +1,8 @@
 package com.jc.research.entity.DTO;
 
-import com.jc.research.entity.Graph;
 import com.jc.research.entity.GraphEdge;
 import com.jc.research.entity.GraphNode;
-import com.jc.research.indicatorAl.entity.AlgorithmExecResult;
+import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

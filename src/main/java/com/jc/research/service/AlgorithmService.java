@@ -2,7 +2,7 @@ package com.jc.research.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jc.research.entity.AlgorithmExecStep;
-import com.jc.research.indicatorAl.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.Algorithm;
 
 import java.util.List;
 import java.util.Map;
