@@ -15,21 +15,21 @@ public class FAMulValAnalysisPR implements ProcessResult {
      * 旋转因子负荷矩阵，判断相关性
      * 除了指标个数之外，最后两行保存 Expl.Var、Expl./Tot
      */
-    private double[][]  rotatedFactorLoadingsMatrix;
+    private Double[][]  rotatedFactorLoadingsMatrix;
 
     /**
      * 相关性矩阵
      */
-    private double[][] correlationMatrix;
+    private Double[][] correlationMatrix;
 
     /**
      * 多变量分析中最终结果为传进来的原始数据集
      * 因为多变量分析不参与后续计算
      */
-    private double[][] finalResult;
+    private Double[][] finalResult;
 
     @Override
-    public double[][] getFinalResult() {
+    public Double[][] getFinalResult() {
         return this.finalResult;
     }
 }

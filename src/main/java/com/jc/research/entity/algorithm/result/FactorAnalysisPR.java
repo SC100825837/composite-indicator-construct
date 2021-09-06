@@ -17,28 +17,28 @@ public class FactorAnalysisPR implements ProcessResult {
      * 旋转因子负荷矩阵，判断相关性
      * 除了指标个数之外，最后两行保存 Expl.Var、Expl./Tot
      */
-    private double[][]  rotatedFactorLoadingsMatrix;
+    private Double[][]  rotatedFactorLoadingsMatrix;
 
     /**
      * 特征值矩阵，三列分别是：特征值、方差（%）、累积方差（%）
      * 这里的百分数转换成了小数
      */
-    private double[][] eigenvalues;
+    private Double[][] eigenvalues;
 
     /**
      * 平方因子加载矩阵,按比例缩放，列和为1
      */
-    private double[][] squaredFactorLoadingMatrix;
+    private Double[][] squaredFactorLoadingMatrix;
 
     /**
      * 指标权重
      */
-    private double[][] indicatorWeight;
+    private Double[][] indicatorWeight;
 
     /**
      * 最终结果，用来做上层判断
      */
-    private double[][] finalResult;
+    private Double[][] finalResult;
 
     /*private Map<String, Double> finalResult;
 
@@ -47,13 +47,13 @@ public class FactorAnalysisPR implements ProcessResult {
     }
 
     @Override
-    public double[][] getFinalResultArr() {
-        double[][] doubles = new double[1][this.finalResult.size()];
+    public Double[][] getFinalResultArr() {
+        Double[][] Doubles = new Double[1][this.finalResult.size()];
         int count = 0;
         for (String indicatorName : this.finalResult.keySet()) {
-            doubles[0][count++] = this.finalResult.get(indicatorName);
+            Doubles[0][count++] = this.finalResult.get(indicatorName);
         }
-        return doubles;
+        return Doubles;
     }
 
     @Override

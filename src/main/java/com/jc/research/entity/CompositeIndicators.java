@@ -24,7 +24,7 @@ public class CompositeIndicators {
 	private String name;
 
 	@Property(name = "indicatorValue")
-	private double indicatorValue;
+	private Double indicatorValue;
 
 	@Relationship(type = "CONSTITUTE", direction = Relationship.INCOMING)
 	private List<FirstLevelIndicator> constitute;

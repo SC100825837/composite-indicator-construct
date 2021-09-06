@@ -52,7 +52,7 @@ public class IndicatorsController {
 
 	@PostMapping("/calcMdComposite")
 	public R calcMdComposite(@RequestBody Map<String, Double> mdBaseIndicatorMap) {
-		double mdComposite = indicatorsServiceImpl.calcModifyBaseIndicator(mdBaseIndicatorMap);
+		Double mdComposite = indicatorsServiceImpl.calcModifyBaseIndicator(mdBaseIndicatorMap);
 		return R.ok(mdComposite, "计算完成");
 	}
 

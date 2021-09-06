@@ -15,38 +15,38 @@ import java.util.List;
 public class AlgorithmUtil {
 
     /**
-     * 将字符串类型的二维数组转换成double类型的二维数组
+     * 将字符串类型的二维数组转换成Double类型的二维数组
      * @param str
      * @return
      */
-    public static double[][] toDoubleArray(String str) {
+    public static Double[][] toDoubleArray(String str) {
         if (str == null || str.equals("")) {
-            return new double[1][1];
+            return new Double[1][1];
         }
         String[][] strings = JSON.parseObject(str, String[][].class);
-        double[][] doubles = new double[strings.length][strings[0].length];
+        Double[][] Doubles = new Double[strings.length][strings[0].length];
         for (int i = 0; i < strings.length; i++) {
             for (int j = 0; j < strings[i].length; j++) {
-                doubles[i][j] = Double.parseDouble(strings[i][j]);
+                Doubles[i][j] = Double.parseDouble(strings[i][j]);
             }
         }
-        return doubles;
+        return Doubles;
     }
 
     /**
-     * 将字符串数组中的每个字符串转成double类型的二维数组并返回
+     * 将字符串数组中的每个字符串转成Double类型的二维数组并返回
      * @param strArr
      * @return
      */
-    public static List<double[][]> toDoubleArray(String[] strArr) {
+    public static List<Double[][]> toDoubleArray(String[] strArr) {
         if (strArr.length == 0) {
             return null;
         }
-        List<double[][]> doubles = new ArrayList<>(strArr.length);
+        List<Double[][]> Doubles = new ArrayList<>(strArr.length);
         for (String string : strArr) {
-            doubles.add(toDoubleArray(string));
+            Doubles.add(toDoubleArray(string));
         }
-        return doubles;
+        return Doubles;
     }
 
     /**
@@ -54,18 +54,18 @@ public class AlgorithmUtil {
      * @param variance 方差
      * @return
      */
-    public static double getStandardDeviation(double variance) {
+    public static Double getStandardDeviation(Double variance) {
         return Math.sqrt(variance);
     }
 
     /**
      * 计算方差
-     * @param doubles
+     * @param Doubles
      * @param average
      * @return
      */
-    public static double getVariance(double[] doubles, double average, int count) {
-        double variance = 0;
+    public static Double getVariance(Double[] doubles, Double average, int count) {
+        Double variance = (double) 0;
         for (Double doubleNum : doubles) {
             variance += (doubleNum - average) * (doubleNum - average);
         }
@@ -78,18 +78,18 @@ public class AlgorithmUtil {
      * @param count 数据总个数
      * @return
      */
-    public static double getAverage(double sumNumber, int count) {
+    public static Double getAverage(Double sumNumber, int count) {
         return sumNumber / count;
     }
 
     /**
      * 求和方法
-     * @param doubles
+     * @param Doubles
      * @return
      */
-    public static double getSum(double[] doubles) {
-        double sum = 0L;
-        for (double number : doubles) {
+    public static Double getSum(Double[] doubles) {
+        Double sum = (double) 0;
+        for (Double number : doubles) {
             sum += number;
         }
         return sum;
@@ -100,8 +100,8 @@ public class AlgorithmUtil {
      * @param originMatrix
      * @return
      */
-    public static double[][] transposeMatrix(double[][] originMatrix) {
-        double[][] transposeMatrix = new double[originMatrix[0].length][originMatrix.length];
+    public static Double[][] transposeMatrix(Double[][] originMatrix) {
+        Double[][] transposeMatrix = new Double[originMatrix[0].length][originMatrix.length];
         for (int i = 0; i < originMatrix.length; i++) {
             for (int j = 0; j < originMatrix[i].length; j++) {
                 transposeMatrix[j][i] = originMatrix[i][j];

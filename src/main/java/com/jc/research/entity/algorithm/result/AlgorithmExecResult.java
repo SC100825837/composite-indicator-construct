@@ -13,9 +13,9 @@ import java.util.Arrays;
  **/
 @Data
 public class AlgorithmExecResult {
-    private double[][] missDataImputation;
+    private Double[][] missDataImputation;
     private ProcessResult multivariateAnalysis;
-    private double[][] normalisation;
+    private Double[][] normalisation;
     private ProcessResult weightingAndAggregation;
 
 }

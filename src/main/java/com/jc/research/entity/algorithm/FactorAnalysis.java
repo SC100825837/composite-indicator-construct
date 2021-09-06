@@ -42,7 +42,7 @@ public class FactorAnalysis extends Algorithm {
     }*/
 
     @Override
-    public ProcessResult exec(double[][] matrix) {
+    public ProcessResult exec(Double[][] matrix) {
         String doublesStr = Arrays.deepToString(matrix);
 
         String[] pyArgs = {"F:/Python/project/composite-indicator-construct/venv/Scripts/python", "F:/Python/project/composite-indicator-construct/FactorAnalysis.py", doublesStr};
@@ -69,12 +69,12 @@ public class FactorAnalysis extends Algorithm {
         factorAnalysisPR.setRotatedFactorLoadingsMatrix(AlgorithmUtil.toDoubleArray(resultStrArr[0]));
         //设置平方因子负荷矩阵
         //先取出旋转因子负载矩阵
-        double[][] rotatedFactorLoadingsMatrix = factorAnalysisPR.getRotatedFactorLoadingsMatrix();
+        Double[][] rotatedFactorLoadingsMatrix = factorAnalysisPR.getRotatedFactorLoadingsMatrix();
         //创建平方因子负荷矩阵
-        double[][] squaredFactorLoadingMatrix = new double[rotatedFactorLoadingsMatrix.length][rotatedFactorLoadingsMatrix[0].length];
+        Double[][] squaredFactorLoadingMatrix = new Double[rotatedFactorLoadingsMatrix.length][rotatedFactorLoadingsMatrix[0].length];
         //缩放
         for (int i = 0; i < rotatedFactorLoadingsMatrix.length; i++) {
-            double oneFactorSum = 0L;
+            Double oneFactorSum = (double) 0;
             for (int j = 0; j < rotatedFactorLoadingsMatrix[i].length; j++) {
                 oneFactorSum += rotatedFactorLoadingsMatrix[i][j];
             }
@@ -89,7 +89,7 @@ public class FactorAnalysis extends Algorithm {
 //        System.out.println(resultStrArr[1]);
         factorAnalysisPR.setEigenvalues(AlgorithmUtil.toDoubleArray(resultStrArr[1]));
         //设置权重
-        double[][] weight = AlgorithmUtil.toDoubleArray(resultStrArr[2]);
+        Double[][] weight = AlgorithmUtil.toDoubleArray(resultStrArr[2]);
         factorAnalysisPR.setIndicatorWeight(weight);
         //设置最终结果
         /*TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
@@ -122,13 +122,4 @@ public class FactorAnalysis extends Algorithm {
         return split;
     }
 
-    @Override
-    public int getExecOrder() {
-        return this.execOrder;
-    }
-
-    @Override
-    public String getStepName() {
-        return stepName;
-    }
 }

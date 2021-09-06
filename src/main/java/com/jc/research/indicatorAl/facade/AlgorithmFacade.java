@@ -14,7 +14,7 @@ import java.util.Map;
  * @create: 2021-08-17 16:16
  **/
 public class AlgorithmFacade {
-    public static AlgorithmExecResult calculate(Map<String, String> algorithmMap, double[][] originMatrix) {
+    public static AlgorithmExecResult calculate(Map<String, String> algorithmMap, Double[][] originMatrix) {
         //根据算法名称，从数据库查找算法的全类名
 //        Map<String, String> specificAlgorithmFromDB = getSpecificAlgorithmFromDB(algorithmMap);
         //初始化算法对象

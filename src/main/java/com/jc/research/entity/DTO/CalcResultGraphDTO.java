@@ -32,7 +32,7 @@ public class CalcResultGraphDTO implements Serializable {
     /**
      * 最终的综合指标值
      */
-    private double compositeIndicator;
+    private Double compositeIndicator;
 
     /**
      * 带有综合指标数值的图对象

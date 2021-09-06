@@ -39,7 +39,7 @@ public class Algorithm {
         return null;
     }
 
-    public <T> T exec(double[][] matrix) {
+    public <T> T exec(Double[][] matrix) {
         return null;
     }
 

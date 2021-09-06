@@ -28,9 +28,9 @@ public class AlgorithmContext {
     /**
      * 数据输入源，二维数组表示矩阵
      */
-    private double[][] originMatrix;
+    private Double[][] originMatrix;
 
-    public AlgorithmContext(Map<String, Algorithm> algorithmInstanceMap, double[][] originMatrix) {
+    public AlgorithmContext(Map<String, Algorithm> algorithmInstanceMap, Double[][] originMatrix) {
         this.algorithmInstanceMap = algorithmInstanceMap;
         this.originMatrix = originMatrix;
         this.algorithmChainList = buildAlgorithmChain();
@@ -59,7 +59,7 @@ public class AlgorithmContext {
         //获取算法结果对象的类对象
         Class<? extends AlgorithmExecResult> aClass = algorithmExecResult.getClass();
 
-        double[][] matrix = originMatrix;
+        Double[][] matrix = originMatrix;
         //按照顺讯遍历算法链
         for (int i = 0; i < this.algorithmChainList.length; i++) {
             //如果有的步骤省略了，那么这步骤对应的算法可能为空

@@ -245,11 +245,11 @@ public class IndicatorsServiceImpl {
         //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
         Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
         //通过算法门面执行算法计算
-        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (double[][]) dataAndAlgorithms[2]);
+        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (Double[][]) dataAndAlgorithms[2]);
 
         createWebDTO(execResult);
         //得到权重计算的最终结果，即权重值数组
-        double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
+        Double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
         TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
         Field[] fields = tai.getClass().getDeclaredFields();
         int weightArrIndex = 0;
@@ -266,7 +266,7 @@ public class IndicatorsServiceImpl {
 //        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
         Map<String, Double> baseIndicatorDataMap = (Map<String, Double>) dataAndAlgorithms[1];
         //初始化综合指标
-        double compositeIndicator = 0L;
+        Double compositeIndicator = (double) 0;
         //计算综合指标数值
         for (Object baseIndicatorName : baseIndicatorDataMap.keySet()) {
             compositeIndicator += baseIndicatorDataMap.get(baseIndicatorName.toString()) * weightMap.get(baseIndicatorName.toString());
@@ -303,7 +303,7 @@ public class IndicatorsServiceImpl {
         //从计算结果中取权重和聚合算法的结果
         FactorAnalysisPR weightingAndAggregation = (FactorAnalysisPR) execResult.getWeightingAndAggregation();
         //取得权重和聚合算法中的负载因子加载矩阵
-        double[][] rotatedFactorLoadingsMatrix = weightingAndAggregation.getRotatedFactorLoadingsMatrix();
+        Double[][] rotatedFactorLoadingsMatrix = weightingAndAggregation.getRotatedFactorLoadingsMatrix();
         //创建矩阵图数据对象
         CoordinateDTO rotatedFactorLoadingsMatrixCoordinate = new CoordinateDTO();
         //设置x轴
@@ -335,7 +335,7 @@ public class IndicatorsServiceImpl {
      * @param baseIndicatorDataMap
      * @param compositeIndicator
      */
-    private void constructIndicatorGraph(Map baseIndicatorDataMap, double compositeIndicator, Long id, Map<String, Double> weightMap) {
+    private void constructIndicatorGraph(Map baseIndicatorDataMap, Double compositeIndicator, Long id, Map<String, Double> weightMap) {
         //先从缓存中取数据，如果没有数据则重新构建
         if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty() && constructObjId.equals(id)) {
             return;
@@ -423,12 +423,12 @@ public class IndicatorsServiceImpl {
         if (taiDataList == null || taiDataList.isEmpty()) {
             taiDataList = taiService.list();
         }
-        double[][] taiDataRows = new double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
+        Double[][] taiDataRows = new Double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
         for (int i = 0; i < taiDataList.size(); i++) {
             if (taiDataList.get(i).getId().equals(calcExecParam.getIndicatorConstructTarget().getId())) {
                 targetTaiObj = taiDataList.get(i);
             }
-            double[] row = {taiDataList.get(i).getPatents(), taiDataList.get(i).getRoyalties(), taiDataList.get(i).getInternet(), taiDataList.get(i).getExports(),
+            Double[] row = {taiDataList.get(i).getPatents(), taiDataList.get(i).getRoyalties(), taiDataList.get(i).getInternet(), taiDataList.get(i).getExports(),
                     taiDataList.get(i).getTelephones(), taiDataList.get(i).getElectricity(), taiDataList.get(i).getSchooling(), taiDataList.get(i).getUniversity()};
             taiDataRows[i] = row;
         }
@@ -459,8 +459,8 @@ public class IndicatorsServiceImpl {
      * @param mdBaseIndicatorMap
      * @return
      */
-    public double calcModifyBaseIndicator(Map<String, Double> mdBaseIndicatorMap) {
-        double mdCompositeIndicator = 0L;
+    public Double calcModifyBaseIndicator(Map<String, Double> mdBaseIndicatorMap) {
+        Double mdCompositeIndicator = (double) 0;
         for (String baseIndicatorName : mdBaseIndicatorMap.keySet()) {
             mdCompositeIndicator += mdBaseIndicatorMap.get(baseIndicatorName) * weightMap.get(baseIndicatorName);
         }
@@ -474,7 +474,7 @@ public class IndicatorsServiceImpl {
      * @param origin
      * @return
      */
-    private double handleFractional(int digit, double origin) {
+    private Double handleFractional(int digit, Double origin) {
         NumberFormat numberInstance = NumberFormat.getNumberInstance();
         numberInstance.setMaximumFractionDigits(digit);
         return Double.parseDouble(numberInstance.format(origin));
@@ -586,7 +586,7 @@ public class IndicatorsServiceImpl {
      * @return
      */
     /*@Deprecated
-    private TierGraphDTO execIndCalcTierGraph(Map baseIndicatorDataMap, double compositeIndicator) {
+    private TierGraphDTO execIndCalcTierGraph(Map baseIndicatorDataMap, Double compositeIndicator) {
         for (Long graphNodeId : tierGraphNodeMap.keySet()) {
             TierGraphDTO tierGraphDTO = tierGraphNodeMap.get(graphNodeId);
             if (tierGraphDTO.getCategory() == 2) {

@@ -30,7 +30,7 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
     private String fullClassName = "";
 
     @Override
-    public ProcessResult exec(double[][] matrix) {
+    public ProcessResult exec(Double[][] matrix) {
         String doublesStr = Arrays.deepToString(matrix);
 
         String[] pyArgs = {"F:/Python/project/composite-indicator-construct/venv/Scripts/python", "F:/Python/project/composite-indicator-construct/FactorAnalysisMulValAnalysis.py", doublesStr};
@@ -76,15 +76,5 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
         split[0] += "]";
         split[1] = "[" + split[1];
         return split;
-    }
-
-    @Override
-    public int getExecOrder() {
-        return this.execOrder;
-    }
-
-    @Override
-    public String getStepName() {
-        return stepName;
     }
 }

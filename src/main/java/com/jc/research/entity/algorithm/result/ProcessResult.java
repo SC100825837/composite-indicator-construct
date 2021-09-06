@@ -4,8 +4,8 @@ import java.util.Map;
 
 public interface ProcessResult {
 
-    double[][] getFinalResult();
+    Double[][] getFinalResult();
 
-    /*double[][] getFinalResultArr();
+    /*Double[][] getFinalResultArr();
     Map<String, Double> getFinalResultMap();*/
 }

@@ -18,30 +18,20 @@ public class ZScores extends Algorithm {
     private String stepName = "normalisation";
 
     @Override
-    public double[][] exec(double[][] matrix) {
-        double[][] transposeMatrix = transposeMatrix(matrix);
-        double[][] normalizationMatrix = new double[matrix[0].length][matrix.length];
+    public Double[][] exec(Double[][] matrix) {
+        Double[][] transposeMatrix = transposeMatrix(matrix);
+        Double[][] normalizationMatrix = new Double[matrix[0].length][matrix.length];
         for (int i = 0; i < transposeMatrix.length; i++) {
             //计算平均值
-            double average = getAverage(getSum(transposeMatrix[i]), transposeMatrix[i].length);
+            Double average = getAverage(getSum(transposeMatrix[i]), transposeMatrix[i].length);
             //计算标准差
-            double standardDeviation = getStandardDeviation(getVariance(transposeMatrix[i], average, transposeMatrix[i].length));
+            Double standardDeviation = getStandardDeviation(getVariance(transposeMatrix[i], average, transposeMatrix[i].length));
             for (int j = 0; j < transposeMatrix[i].length; j++) {
-                double standardisation = (transposeMatrix[i][j] - average) / standardDeviation;
+                Double standardisation = (transposeMatrix[i][j] - average) / standardDeviation;
                 normalizationMatrix[i][j] = standardisation;
             }
         }
         return transposeMatrix(normalizationMatrix);
-    }
-
-    @Override
-    public int getExecOrder() {
-        return execOrder;
-    }
-
-    @Override
-    public String getStepName() {
-        return stepName;
     }
 
 }
