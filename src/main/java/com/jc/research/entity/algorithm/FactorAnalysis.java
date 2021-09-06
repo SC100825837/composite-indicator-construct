@@ -1,6 +1,7 @@
 package com.jc.research.entity.algorithm;
 
 import com.jc.research.entity.TechnologyAchievementIndex;
+import com.jc.research.util.AlgorithmExecOrder;
 import com.jc.research.util.ContainProcessResult;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.entity.algorithm.result.ProcessResult;
@@ -24,12 +25,10 @@ import java.util.Map;
  * @create: 2021-08-17 16:04
  **/
 @Data
-@Getter
-@Setter
 @ContainProcessResult
 public class FactorAnalysis extends Algorithm {
 
-    private int execOrder = 2;
+    private int execOrder = AlgorithmExecOrder.WEIGHTING_AND_AGGREGATION;
 
     private String stepName = "weightingAndAggregation";
 
@@ -68,6 +67,24 @@ public class FactorAnalysis extends Algorithm {
         String[] resultStrArr = normalizeStrAndToArr(copyResultStr.toString());
         //设置旋转因子载荷矩阵
         factorAnalysisPR.setRotatedFactorLoadingsMatrix(AlgorithmUtil.toDoubleArray(resultStrArr[0]));
+        //设置平方因子负荷矩阵
+        //先取出旋转因子负载矩阵
+        double[][] rotatedFactorLoadingsMatrix = factorAnalysisPR.getRotatedFactorLoadingsMatrix();
+        //创建平方因子负荷矩阵
+        double[][] squaredFactorLoadingMatrix = new double[rotatedFactorLoadingsMatrix.length][rotatedFactorLoadingsMatrix[0].length];
+        //缩放
+        for (int i = 0; i < rotatedFactorLoadingsMatrix.length; i++) {
+            double oneFactorSum = 0L;
+            for (int j = 0; j < rotatedFactorLoadingsMatrix[i].length; j++) {
+                oneFactorSum += rotatedFactorLoadingsMatrix[i][j];
+            }
+            for (int j = 0; j < rotatedFactorLoadingsMatrix[i].length; j++) {
+                squaredFactorLoadingMatrix[i][j] = rotatedFactorLoadingsMatrix[i][j] / oneFactorSum;
+            }
+        }
+        //设置平方因子负荷矩阵
+        factorAnalysisPR.setSquaredFactorLoadingMatrix(squaredFactorLoadingMatrix);
+
         //设置特征值，累积方差等
 //        System.out.println(resultStrArr[1]);
         factorAnalysisPR.setEigenvalues(AlgorithmUtil.toDoubleArray(resultStrArr[1]));

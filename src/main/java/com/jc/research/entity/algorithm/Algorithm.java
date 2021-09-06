@@ -10,11 +10,6 @@ import org.springframework.data.annotation.Transient;
  * @create: 2021-08-25 19:58
  **/
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Algorithm {
 
     private Long id;

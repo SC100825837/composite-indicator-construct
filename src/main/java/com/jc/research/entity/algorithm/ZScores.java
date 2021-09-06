@@ -1,9 +1,11 @@
 package com.jc.research.entity.algorithm;
 
+import com.jc.research.util.AlgorithmExecOrder;
 import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +24,7 @@ import java.util.stream.Collectors;
 @Data
 public class ZScores extends Algorithm {
 
-    private int execOrder = 1;
+    private int execOrder = AlgorithmExecOrder.NORMALISATION;
 
     private String stepName = "normalisation";
 

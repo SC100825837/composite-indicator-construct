@@ -5,6 +5,8 @@ import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
 import com.jc.research.entity.algorithm.Algorithm;
 import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
+import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
+import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
 import com.jc.research.mapper.IndicatorsRepository;
 import com.jc.research.service.AlgorithmService;
@@ -96,6 +98,9 @@ public class IndicatorsServiceImpl {
      * 科技成就指数数据缓存
      */
     private List<TechnologyAchievementIndex> taiDataList;
+
+    //权重map，key为指标名称，value为权重值
+    private Map<String, Double> weightMap = new HashMap<>();
 
     /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
@@ -236,14 +241,15 @@ public class IndicatorsServiceImpl {
         if (graphNodeList.isEmpty() || graphEdgeList.isEmpty()) {
             throw new Exception("数据异常，请尝试刷新页面");
         }
+        weightMap = new HashMap<>();
         //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
         Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
         //通过算法门面执行算法计算
         AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (double[][]) dataAndAlgorithms[2]);
+
+        createWebDTO(execResult);
         //得到权重计算的最终结果，即权重值数组
         double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
-        //权重map，key为指标名称，value为权重值
-        Map<String, Double> weightMap = new HashMap<>();
         TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
         Field[] fields = tai.getClass().getDeclaredFields();
         int weightArrIndex = 0;
@@ -278,6 +284,49 @@ public class IndicatorsServiceImpl {
         calcResultGraphDTO.getCompIndGraphEdge().addAll(indicatorGraphEdgeList);
 
         return calcResultGraphDTO;
+
+    }
+
+    private void createWebDTO(AlgorithmExecResult execResult) {
+        //创建过程结果前端封装对象
+        ProcessResultDTO processResultDTO = new ProcessResultDTO();
+
+        //获取原始数据集
+        processResultDTO.setOriginalData(taiDataList);
+
+        //缺失值填补
+        //TODO
+
+        //多变量分析
+
+        
+        //从计算结果中取权重和聚合算法的结果
+        FactorAnalysisPR weightingAndAggregation = (FactorAnalysisPR) execResult.getWeightingAndAggregation();
+        //取得权重和聚合算法中的负载因子加载矩阵
+        double[][] rotatedFactorLoadingsMatrix = weightingAndAggregation.getRotatedFactorLoadingsMatrix();
+        //创建矩阵图数据对象
+        CoordinateDTO rotatedFactorLoadingsMatrixCoordinate = new CoordinateDTO();
+        //设置x轴
+        rotatedFactorLoadingsMatrixCoordinate.setXAxis(Arrays.asList("因子1", "因子2", "因子3", "因子4"));
+        //设置y轴
+        rotatedFactorLoadingsMatrixCoordinate.setYAxis(Arrays.asList("patents", "royalties", "internet", "exports", "telephones", "electricity", "schooling", "university"));
+        //设置数据
+        List<List<Double>> rotatedFactorLoadingsMatrixData = new ArrayList<>();
+        for (int i = 0; i < rotatedFactorLoadingsMatrix.length; i++) {
+            for (int j = 0; j < rotatedFactorLoadingsMatrix[i].length; j++) {
+                List<Double> unitData = new ArrayList<>();
+                unitData.add((double) j);
+                unitData.add((double) i);
+                unitData.add(rotatedFactorLoadingsMatrix[i][j]);
+                rotatedFactorLoadingsMatrixData.add(unitData);
+            }
+        }
+        rotatedFactorLoadingsMatrixCoordinate.setData(rotatedFactorLoadingsMatrixData);
+        //设置颜色上下限的值
+        rotatedFactorLoadingsMatrixCoordinate.setMinValue(-1);
+        rotatedFactorLoadingsMatrixCoordinate.setMaxValue(1);
+        processResultDTO.getWeightingAndAggregation().add(rotatedFactorLoadingsMatrixCoordinate);
+
 
     }
 
@@ -403,6 +452,19 @@ public class IndicatorsServiceImpl {
             }
         }
         return new Object[]{algorithmMap, indicatorValueMap, taiDataRows};
+    }
+
+    /**
+     * 计算基础指标值修改之后的综合指标值
+     * @param mdBaseIndicatorMap
+     * @return
+     */
+    public double calcModifyBaseIndicator(Map<String, Double> mdBaseIndicatorMap) {
+        double mdCompositeIndicator = 0L;
+        for (String baseIndicatorName : mdBaseIndicatorMap.keySet()) {
+            mdCompositeIndicator += mdBaseIndicatorMap.get(baseIndicatorName) * weightMap.get(baseIndicatorName);
+        }
+        return mdCompositeIndicator;
     }
 
     /**

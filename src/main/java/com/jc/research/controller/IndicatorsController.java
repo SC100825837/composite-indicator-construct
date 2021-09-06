@@ -9,6 +9,8 @@ import com.jc.research.util.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * @program: neo4j
  * @description:
@@ -40,12 +42,18 @@ public class IndicatorsController {
 		try {
 			calcResultGraphDTO = indicatorsServiceImpl.handleDataAndAlgorithm(calcExecParam);
 		} catch (Exception e) {
-			return R.failed(e.getCause());
+			return R.failed(e.getMessage());
 		}
 		if (calcResultGraphDTO == null) {
 			return R.failed("数据不存在");
 		}
 		return R.ok(calcResultGraphDTO, "计算完成，综合指标数值为：" + calcResultGraphDTO.getCompositeIndicator());
+	}
+
+	@PostMapping("/calcMdComposite")
+	public R calcMdComposite(@RequestBody Map<String, Double> mdBaseIndicatorMap) {
+		double mdComposite = indicatorsServiceImpl.calcModifyBaseIndicator(mdBaseIndicatorMap);
+		return R.ok(mdComposite, "计算完成");
 	}
 
 	@GetMapping("/getSecondNodes")

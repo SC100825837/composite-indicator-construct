@@ -1,5 +1,7 @@
 package com.jc.research.entity.algorithm.result;
 
+import lombok.Data;
+
 import java.util.Arrays;
 
 /**
@@ -9,61 +11,11 @@ import java.util.Arrays;
  * @author: SunChao
  * @create: 2021-08-17 16:21
  **/
+@Data
 public class AlgorithmExecResult {
     private double[][] missDataImputation;
-    private double[][] multivariateAnalysis;
+    private ProcessResult multivariateAnalysis;
     private double[][] normalisation;
     private ProcessResult weightingAndAggregation;
 
-    public AlgorithmExecResult() {
-    }
-
-    public AlgorithmExecResult(double[][] missDataImputation, double[][] multivariateAnalysis, double[][] normalisation, ProcessResult weightingAndAggregation) {
-        this.missDataImputation = missDataImputation;
-        this.multivariateAnalysis = multivariateAnalysis;
-        this.normalisation = normalisation;
-        this.weightingAndAggregation = weightingAndAggregation;
-    }
-
-    @Override
-    public String toString() {
-        return "AlgorithmExecResult{" +
-                "missDataImputation=" + Arrays.deepToString(missDataImputation) +
-                ", multivariateAnalysis=" + Arrays.deepToString(multivariateAnalysis) +
-                ", normalisation=" + Arrays.deepToString(normalisation) +
-                ", weightingAndAggregation=" + weightingAndAggregation +
-                '}';
-    }
-
-    public double[][] getMissDataImputation() {
-        return missDataImputation;
-    }
-
-    public void setMissDataImputation(double[][] missDataImputation) {
-        this.missDataImputation = missDataImputation;
-    }
-
-    public double[][] getMultivariateAnalysis() {
-        return multivariateAnalysis;
-    }
-
-    public void setMultivariateAnalysis(double[][] multivariateAnalysis) {
-        this.multivariateAnalysis = multivariateAnalysis;
-    }
-
-    public double[][] getNormalisation() {
-        return normalisation;
-    }
-
-    public void setNormalisation(double[][] normalisation) {
-        this.normalisation = normalisation;
-    }
-
-    public ProcessResult getWeightingAndAggregation() {
-        return weightingAndAggregation;
-    }
-
-    public void setWeightingAndAggregation(ProcessResult weightingAndAggregation) {
-        this.weightingAndAggregation = weightingAndAggregation;
-    }
 }
