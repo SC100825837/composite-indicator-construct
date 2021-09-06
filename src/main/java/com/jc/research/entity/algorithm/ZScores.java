@@ -1,19 +1,8 @@
 package com.jc.research.entity.algorithm;
 
 import com.jc.research.util.AlgorithmExecOrder;
-import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import static com.jc.research.util.AlgorithmUtil.*;
 
 /**
  * @program: constructing-composite-indicators
@@ -55,64 +44,4 @@ public class ZScores extends Algorithm {
         return stepName;
     }
 
-    /**
-     * 计算标准差
-     * @param variance 方差
-     * @return
-     */
-    public double getStandardDeviation(double variance) {
-        return Math.sqrt(variance);
-    }
-
-    /**
-     * 计算方差
-     * @param doubles
-     * @param average
-     * @return
-     */
-    public double getVariance(double[] doubles, double average, int count) {
-        double variance = 0;
-        for (Double doubleNum : doubles) {
-            variance += (doubleNum - average) * (doubleNum - average);
-        }
-        return variance / count;
-    }
-
-    /**
-     * 计算平均值
-     * @param sumNumber 求和后的数值
-     * @param count 数据总个数
-     * @return
-     */
-    public double getAverage(double sumNumber, int count) {
-        return sumNumber / count;
-    }
-
-    /**
-     * 求和方法
-     * @param doubles
-     * @return
-     */
-    private double getSum(double[] doubles) {
-        double sum = 0L;
-        for (double number : doubles) {
-            sum += number;
-        }
-        return sum;
-    }
-
-    /**
-     * 矩阵转置
-     * @param originMatrix
-     * @return
-     */
-    private double[][] transposeMatrix(double[][] originMatrix) {
-        double[][] transposeMatrix = new double[originMatrix[0].length][originMatrix.length];
-        for (int i = 0; i < originMatrix.length; i++) {
-            for (int j = 0; j < originMatrix[i].length; j++) {
-                transposeMatrix[j][i] = originMatrix[i][j];
-            }
-        }
-        return transposeMatrix;
-    }
 }
