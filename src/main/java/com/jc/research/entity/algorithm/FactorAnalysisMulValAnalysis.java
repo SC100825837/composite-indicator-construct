@@ -54,7 +54,7 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
 //        System.out.println(copyResultStr.toString());
         String[] resultStrArr = normalizeStrAndToArr(copyResultStr.toString());
         //拿到相关性矩阵和旋转因子负荷矩阵的二维数组
-        List<double[][]> doubleArray = AlgorithmUtil.toDoubleArray(resultStrArr);
+        List<Double[][]> doubleArray = AlgorithmUtil.toDoubleArray(resultStrArr);
 
         FAMulValAnalysisPR faMulValAnalysisPR = new FAMulValAnalysisPR();
         if (doubleArray == null || doubleArray.isEmpty()) {
