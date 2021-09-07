@@ -23,4 +23,9 @@ public class GraphNode extends Graph {
      * 类别
      */
     private int category;
+
+    /**
+     * 父节点id
+     */
+    private Long parentId;
 }

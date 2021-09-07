@@ -99,8 +99,15 @@ public class IndicatorsServiceImpl {
      */
     private List<TechnologyAchievementIndex> taiDataList;
 
-    //权重map，key为指标名称，value为权重值
+    /**
+     * 权重map，key为指标名称，value为权重值
+     */
     private Map<String, Double> weightMap = new HashMap<>();
+
+    /**
+     * 基础指标值map，key为指标名称，value为指标值
+     */
+    private Map<String, Double> baseIndicatorValueMap = new HashMap<>();
 
     /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
@@ -138,18 +145,18 @@ public class IndicatorsServiceImpl {
             //二级节点与一节点之间的关系
             RelationshipModel firstAndSecondShip = (RelationshipModel) record.get("rs2");
 
-			GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0);
+			GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0, -1L);
 			if (node1 != null) {
 				nodes.add(node1);
 				//添加到图节点缓存中
 				graphNodeList.add(node1);
 			}
-			GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1);
+			GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1, indicatorNode.getId());
 			if (node2 != null) {
 				nodes.add(node2);
                 graphNodeList.add(node2);
 			}
-			GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2);
+			GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2, firstLevelNode.getId());
 			if (node3 != null) {
 				nodes.add(node3);
                 graphNodeList.add(node3);
@@ -179,7 +186,7 @@ public class IndicatorsServiceImpl {
 	 * @param nodeModel
 	 * @return
 	 */
-    private GraphNode createNode(GraphNode graphNode, NodeModel nodeModel, int category) {
+    private GraphNode createNode(GraphNode graphNode, NodeModel nodeModel, int category, Long parentId) {
         if (!check(nodeModel.getId())) {
             return null;
         }
@@ -190,6 +197,7 @@ public class IndicatorsServiceImpl {
         graphNode.setId(nodeModel.getId());
         graphNode.setLbName(nodeModel.getLabels()[0]);
         graphNode.setCategory(category);
+        graphNode.setParentId(parentId);
         List<Property<String, Object>> propertyList = nodeModel.getPropertyList();
         for (Property<String, Object> property : propertyList) {
             graphNode.getAttributes().put(property.getKey(), property.getValue());
@@ -264,18 +272,18 @@ public class IndicatorsServiceImpl {
 //        Country country = (Country) dataAndAlgorithms[1];
         //取出国家对象中的各基础指标值
 //        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
-        Map<String, Double> baseIndicatorDataMap = (Map<String, Double>) dataAndAlgorithms[1];
+        baseIndicatorValueMap = (Map<String, Double>) dataAndAlgorithms[1];
         //初始化综合指标
         Double compositeIndicator = (double) 0;
         //计算综合指标数值
-        for (Object baseIndicatorName : baseIndicatorDataMap.keySet()) {
-            compositeIndicator += baseIndicatorDataMap.get(baseIndicatorName.toString()) * weightMap.get(baseIndicatorName.toString());
+        for (Object baseIndicatorName : baseIndicatorValueMap.keySet()) {
+            compositeIndicator += baseIndicatorValueMap.get(baseIndicatorName.toString()) * weightMap.get(baseIndicatorName.toString());
         }
         //处理小数点位数
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         //构建带有指标值的图数据
-        constructIndicatorGraph(baseIndicatorDataMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId(), weightMap);
+        constructIndicatorGraph(baseIndicatorValueMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId(), weightMap);
 
         CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
         calcResultGraphDTO.setAlgorithmExecResult(execResult);
@@ -353,16 +361,18 @@ public class IndicatorsServiceImpl {
                 //创建指标节点，并设置属性
                 GraphNode baseIndicatorDataNode = new GraphNode();
                 baseIndicatorDataNode.setId(++indicatorNodeId);
-                baseIndicatorDataNode.getAttributes().put("indicatorValue", "基础指标值：" + baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
+                baseIndicatorDataNode.getAttributes().put("indicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
                 baseIndicatorDataNode.setCategory(3);
                 baseIndicatorDataNode.setLbName("基础指标值");
+                baseIndicatorDataNode.setParentId(graphNode.getId());
 
                 //创建权重节点，并设置属性
                 GraphNode weightNode = new GraphNode();
                 weightNode.setId(++indicatorNodeId);
-                weightNode.getAttributes().put("indicatorValue", "权重：" + handleFractional(2, weightMap.get(graphNode.getAttributes().get("name").toString())));
+                weightNode.getAttributes().put("indicatorValue", handleFractional(2, weightMap.get(graphNode.getAttributes().get("name").toString())));
                 weightNode.setCategory(4);
                 weightNode.setLbName("权重值");
+                weightNode.setParentId(graphNode.getId());
 
                 //创建连线，并设置属性，基础指标节点由指标值指向 通用指标名称
                 GraphEdge indicatorGraphEdge = new GraphEdge();
@@ -383,9 +393,10 @@ public class IndicatorsServiceImpl {
         //创建综合指标值节点，并设置属性
         GraphNode compIndGraphNode = new GraphNode();
         compIndGraphNode.setId(++indicatorNodeId);
-        compIndGraphNode.getAttributes().put("indicatorValue", "综合指标值：" + compositeIndicator);
+        compIndGraphNode.getAttributes().put("indicatorValue", compositeIndicator);
         compIndGraphNode.setLbName("综合指标值");
         compIndGraphNode.setCategory(5);
+        compIndGraphNode.setParentId(-1L);
         //创建连线，并设置属性，综合指标值节点由 指标值 指向 通用指标名称
         GraphEdge graphEdge = new GraphEdge();
         graphEdge.setSourceID(compIndGraphNode.getId());
@@ -460,9 +471,16 @@ public class IndicatorsServiceImpl {
      * @return
      */
     public Double calcModifyBaseIndicator(Map<String, Double> mdBaseIndicatorMap) {
+        //TODO 现在做的是没有标准化直接进行计算的结果，需要根据选择的标准化算法进行计算
         Double mdCompositeIndicator = (double) 0;
-        for (String baseIndicatorName : mdBaseIndicatorMap.keySet()) {
-            mdCompositeIndicator += mdBaseIndicatorMap.get(baseIndicatorName) * weightMap.get(baseIndicatorName);
+        for (String modifyName : mdBaseIndicatorMap.keySet()) {
+            for (String baseIndicatorName : baseIndicatorValueMap.keySet()) {
+                if (modifyName.equals(baseIndicatorName)) {
+                    continue;
+                }
+                mdCompositeIndicator += baseIndicatorValueMap.get(baseIndicatorName) * weightMap.get(modifyName);
+            }
+            mdCompositeIndicator += mdBaseIndicatorMap.get(modifyName) * weightMap.get(modifyName);
         }
         return handleFractional(2, mdCompositeIndicator);
     }
