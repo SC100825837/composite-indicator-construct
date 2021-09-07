@@ -464,7 +464,7 @@ public class IndicatorsServiceImpl {
         for (String baseIndicatorName : mdBaseIndicatorMap.keySet()) {
             mdCompositeIndicator += mdBaseIndicatorMap.get(baseIndicatorName) * weightMap.get(baseIndicatorName);
         }
-        return mdCompositeIndicator;
+        return handleFractional(2, mdCompositeIndicator);
     }
 
     /**
