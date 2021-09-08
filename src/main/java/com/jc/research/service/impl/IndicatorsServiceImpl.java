@@ -4,7 +4,9 @@ import com.google.common.collect.Maps;
 import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
 import com.jc.research.entity.algorithm.Algorithm;
+import com.jc.research.entity.algorithm.FactorAnalysisMulValAnalysis;
 import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
+import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
@@ -12,7 +14,9 @@ import com.jc.research.mapper.IndicatorsRepository;
 import com.jc.research.service.AlgorithmService;
 import com.jc.research.service.CountryService;
 import com.jc.research.service.TAIService;
+import com.jc.research.util.AlgorithmConstants;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.model.Result;
 import org.neo4j.ogm.response.model.NodeModel;
@@ -32,6 +36,7 @@ import java.util.*;
  * @author: SunChao
  * @create: 2021-06-23 15:42
  **/
+@Slf4j
 @Service
 public class IndicatorsServiceImpl {
 
@@ -108,6 +113,11 @@ public class IndicatorsServiceImpl {
      * 基础指标值map，key为指标名称，value为指标值
      */
     private Map<String, Double> baseIndicatorValueMap = new HashMap<>();
+
+    /**
+     * 算法计算结果
+     */
+    private AlgorithmExecResult execResult;
 
     /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
@@ -255,7 +265,7 @@ public class IndicatorsServiceImpl {
         //通过算法门面执行算法计算
         AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (Double[][]) dataAndAlgorithms[2]);
 
-        createWebDTO(execResult);
+        this.execResult = execResult;
         //得到权重计算的最终结果，即权重值数组
         Double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
         TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
@@ -295,21 +305,127 @@ public class IndicatorsServiceImpl {
 
     }
 
-    private void createWebDTO(AlgorithmExecResult execResult) {
+    /**
+     * 拿到计算过程数据,封装对象并返回
+     */
+    public ProcessResultDTO getProcessData() {
+
+        return createWebDTO(this.execResult);
+    }
+
+    /**
+     * 拿到计算过程数据,封装对象并返回
+     * @param execResult
+     */
+    private ProcessResultDTO createWebDTO(AlgorithmExecResult execResult) {
         //创建过程结果前端封装对象
         ProcessResultDTO processResultDTO = new ProcessResultDTO();
 
         //获取原始数据集
-        processResultDTO.setOriginalData(taiDataList);
+        processResultDTO.getOriginalData().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.ORIGIN_DATA_SET_NAME_ZH);
+        processResultDTO.getOriginalData().put("isContainPR", false);
+        processResultDTO.getOriginalData().put("data", taiDataList);
 
         //缺失值填补
-        //TODO
+        Double[][] missDataImputationArr = execResult.getMissDataImputation();
+        //创建新的集合，用来存储缺失值填补算法返回的数据
+        List<TechnologyAchievementIndex> missDataImputationList = new ArrayList<>();
+        try {
+            for (int i = 0; i < taiDataList.size(); i++) {
+                //创建集合中的行对象
+                TechnologyAchievementIndex taiObj = new TechnologyAchievementIndex();
+                //设置id和国家名称
+                taiObj.setId(taiDataList.get(i).getId());
+                taiObj.setCountryName(taiDataList.get(i).getCountryName());
+                //反射拿到对象的属性值，顺序按照类里面声明属性的顺序，所以对象中的属性顺序不能动
+                Field[] fields = taiObj.getClass().getDeclaredFields();
+                for (int j = 0; j < fields.length; j++) {
+                    fields[j].setAccessible(true);
+                    //缺失值填补返回的数据没有这两项，直接跳过
+                    if (fields[j].getName().equals("id") || fields[j].getName().equals("countryName")) {
+                        continue;
+                    }
+                    //向创建的对象中设置属性，i-2是因为前面两次循环跳过了两次，此时i为2，取不到缺失值插补结果中的前两项数据，并且最后数组下标会越界
+                    fields[j].set(taiObj, missDataImputationArr[i][j - 2]);
+                }
+                missDataImputationList.add(taiObj);
+            }
+
+        } catch (IllegalAccessException e) {
+            log.error(e.getMessage(), e.getCause());
+        }
+        processResultDTO.getMissDataImputation().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.MISS_DATA_IMPUTATION_NAME_ZH);
+        processResultDTO.getMissDataImputation().put("isContainPR", false);
+        processResultDTO.getMissDataImputation().put("data", missDataImputationList);
 
         //多变量分析
+        //拿到多变量分析计算结果
+        FAMulValAnalysisPR multivariateAnalysisPR = (FAMulValAnalysisPR) execResult.getMultivariateAnalysis();
+        Map<String, Object> multivariateAnalysisResultMap = new HashMap<>();
+        Double[][] correlationMatrix = multivariateAnalysisPR.getCorrelationMatrix();
+        //创建矩阵图数据对象
+        CoordinateDTO correlationMatrixCoordinate = new CoordinateDTO();
+        String[] axisData = {"patents", "royalties", "internet", "exports", "telephones", "electricity", "schooling", "university"};
+        //设置x轴
+        correlationMatrixCoordinate.setXAxis(Arrays.asList(axisData));
+        //设置y轴
+        correlationMatrixCoordinate.setYAxis(Arrays.asList(axisData));
+        //设置数据
+        List<List<Double>> correlationMatrixData = new ArrayList<>();
+        for (int i = 0; i < correlationMatrix.length; i++) {
+            for (int j = 0; j < correlationMatrix[i].length; j++) {
+                List<Double> unitData = new ArrayList<>();
+                unitData.add((double) j);
+                unitData.add((double) i);
+                unitData.add(handleFractional(2, correlationMatrix[i][j]));
+                correlationMatrixData.add(unitData);
+            }
+        }
+        correlationMatrixCoordinate.setData(correlationMatrixData);
+        correlationMatrixCoordinate.setMaxValue(1);
+        correlationMatrixCoordinate.setMinValue(-1);
+        correlationMatrixCoordinate.setTitle("相关性矩阵");
+        multivariateAnalysisResultMap.put("correlationMatrix", correlationMatrixCoordinate);
+        processResultDTO.getMultivariateAnalysis().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.MULTI_VARIATE_ANALYSIS_NAME_ZH);
+        processResultDTO.getMultivariateAnalysis().put("isContainPR", true);
+        processResultDTO.getMultivariateAnalysis().put("data", multivariateAnalysisResultMap);
 
-        
+        //标准化
+        Double[][] normalisationArr = execResult.getNormalisation();
+        //创建新的集合，用来存储标准化算法返回的数据
+        List<TechnologyAchievementIndex> normalisationList = new ArrayList<>();
+        try {
+            for (int i = 0; i < taiDataList.size(); i++) {
+                //创建集合中的行对象
+                TechnologyAchievementIndex taiObj = new TechnologyAchievementIndex();
+                //设置id和国家名称
+                taiObj.setId(taiDataList.get(i).getId());
+                taiObj.setCountryName(taiDataList.get(i).getCountryName());
+                //反射拿到对象的属性值，顺序按照类里面声明属性的顺序，所以对象中的属性顺序不能动
+                Field[] fields = taiObj.getClass().getDeclaredFields();
+                for (int j = 0; j < fields.length; j++) {
+                    fields[j].setAccessible(true);
+                    //缺失值填补返回的数据没有这两项，直接跳过
+                    if (fields[j].getName().equals("id") || fields[j].getName().equals("countryName")) {
+                        continue;
+                    }
+                    //向创建的对象中设置属性，i-2是因为前面两次循环跳过了两次，此时i为2，取不到缺失值插补结果中的前两项数据，并且最后数组下标会越界
+                    fields[j].set(taiObj, handleFractional(2, normalisationArr[i][j - 2]));
+                }
+                normalisationList.add(taiObj);
+            }
+
+        } catch (IllegalAccessException e) {
+            log.error(e.getMessage(), e.getCause());
+        }
+        processResultDTO.getNormalisation().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.NORMALISATION_NAME_ZH);
+        processResultDTO.getNormalisation().put("isContainPR", false);
+        processResultDTO.getNormalisation().put("data", normalisationList);
+
+        //权重和聚合
         //从计算结果中取权重和聚合算法的结果
         FactorAnalysisPR weightingAndAggregation = (FactorAnalysisPR) execResult.getWeightingAndAggregation();
+        Map<String, Object> weightingAndAggregationResultMap = new HashMap<>();
         //取得权重和聚合算法中的负载因子加载矩阵
         Double[][] rotatedFactorLoadingsMatrix = weightingAndAggregation.getRotatedFactorLoadingsMatrix();
         //创建矩阵图数据对象
@@ -317,7 +433,7 @@ public class IndicatorsServiceImpl {
         //设置x轴
         rotatedFactorLoadingsMatrixCoordinate.setXAxis(Arrays.asList("因子1", "因子2", "因子3", "因子4"));
         //设置y轴
-        rotatedFactorLoadingsMatrixCoordinate.setYAxis(Arrays.asList("patents", "royalties", "internet", "exports", "telephones", "electricity", "schooling", "university"));
+        rotatedFactorLoadingsMatrixCoordinate.setYAxis(Arrays.asList(axisData));
         //设置数据
         List<List<Double>> rotatedFactorLoadingsMatrixData = new ArrayList<>();
         for (int i = 0; i < rotatedFactorLoadingsMatrix.length; i++) {
@@ -325,7 +441,7 @@ public class IndicatorsServiceImpl {
                 List<Double> unitData = new ArrayList<>();
                 unitData.add((double) j);
                 unitData.add((double) i);
-                unitData.add(rotatedFactorLoadingsMatrix[i][j]);
+                unitData.add(handleFractional(2, rotatedFactorLoadingsMatrix[i][j]));
                 rotatedFactorLoadingsMatrixData.add(unitData);
             }
         }
@@ -333,9 +449,63 @@ public class IndicatorsServiceImpl {
         //设置颜色上下限的值
         rotatedFactorLoadingsMatrixCoordinate.setMinValue(-1);
         rotatedFactorLoadingsMatrixCoordinate.setMaxValue(1);
-        processResultDTO.getWeightingAndAggregation().add(rotatedFactorLoadingsMatrixCoordinate);
+        rotatedFactorLoadingsMatrixCoordinate.setTitle("旋转因子载荷矩阵");
+        weightingAndAggregationResultMap.put("rotatedFactorLoadingsMatrix", rotatedFactorLoadingsMatrixCoordinate);
 
+        //取得权重和聚合算法中的特征值、方差百分比、累计方差
+        Double[][] eigenvalueArr = weightingAndAggregation.getEigenvalues();
+        //创建矩阵图数据对象
+        CoordinateDTO eigenvalueCoordinate = new CoordinateDTO();
+        //设置x轴
+        eigenvalueCoordinate.setXAxis(Arrays.asList("特征值", "方差(%)", "累积方差(%)"));
+        //设置y轴
+        eigenvalueCoordinate.setYAxis(Arrays.asList(axisData));
+        //设置数据
+        List<List<Double>> eigenvalueData = new ArrayList<>();
+        for (int i = 0; i < eigenvalueArr.length; i++) {
+            for (int j = 0; j < eigenvalueArr[i].length; j++) {
+                List<Double> unitData = new ArrayList<>();
+                unitData.add((double) j);
+                unitData.add((double) i);
+                unitData.add(handleFractional(2, eigenvalueArr[i][j]));
+                eigenvalueData.add(unitData);
+            }
+        }
+        eigenvalueCoordinate.setData(eigenvalueData);
+        //设置颜色上下限的值
+        eigenvalueCoordinate.setMinValue(0);
+        eigenvalueCoordinate.setMaxValue(100);
+        eigenvalueCoordinate.setTitle("特征值");
+        weightingAndAggregationResultMap.put("eigenvalues", eigenvalueCoordinate);
 
+        //取得权重和聚合算法中的指标权重
+        Double[] indicatorWeight = weightingAndAggregation.getIndicatorWeight()[0];
+        //创建矩阵图数据对象
+        CoordinateDTO indicatorWeightCoordinate = new CoordinateDTO();
+        //设置x轴
+        indicatorWeightCoordinate.setXAxis(Collections.singletonList("权重"));
+        //设置y轴
+        indicatorWeightCoordinate.setYAxis(Arrays.asList(axisData));
+        //设置数据
+        List<List<Double>> indicatorWeightData = new ArrayList<>();
+        for (int i = 0; i < indicatorWeight.length; i++) {
+            List<Double> unitData = new ArrayList<>();
+            unitData.add((double) i);
+            unitData.add((double) 0);
+            unitData.add(handleFractional(2, indicatorWeight[i]));
+            indicatorWeightData.add(unitData);
+        }
+        indicatorWeightCoordinate.setData(indicatorWeightData);
+        //设置颜色上下限的值
+        indicatorWeightCoordinate.setMinValue(0);
+        indicatorWeightCoordinate.setMaxValue(1);
+        indicatorWeightCoordinate.setTitle("权重");
+        weightingAndAggregationResultMap.put("indicatorWeight", indicatorWeightCoordinate);
+        processResultDTO.getWeightingAndAggregation().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.WEIGHTING_AND_AGGREGATION_NAME_ZH);
+        processResultDTO.getWeightingAndAggregation().put("isContainPR", true);
+        processResultDTO.getWeightingAndAggregation().put("data", weightingAndAggregationResultMap);
+
+        return processResultDTO;
     }
 
     /**

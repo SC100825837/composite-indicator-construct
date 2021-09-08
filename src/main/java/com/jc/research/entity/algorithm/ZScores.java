@@ -1,6 +1,6 @@
 package com.jc.research.entity.algorithm;
 
-import com.jc.research.util.AlgorithmExecOrder;
+import com.jc.research.util.AlgorithmConstants;
 import lombok.Data;
 import static com.jc.research.util.AlgorithmUtil.*;
 
@@ -13,7 +13,7 @@ import static com.jc.research.util.AlgorithmUtil.*;
 @Data
 public class ZScores extends Algorithm {
 
-    private int execOrder = AlgorithmExecOrder.NORMALISATION;
+    private int execOrder = AlgorithmConstants.NORMALISATION_ORDER;
 
     private String stepName = "normalisation";
 

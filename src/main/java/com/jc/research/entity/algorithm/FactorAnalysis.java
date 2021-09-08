@@ -1,22 +1,16 @@
 package com.jc.research.entity.algorithm;
 
-import com.jc.research.entity.TechnologyAchievementIndex;
-import com.jc.research.util.AlgorithmExecOrder;
+import com.jc.research.util.AlgorithmConstants;
 import com.jc.research.util.ContainProcessResult;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.data.annotation.Transient;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @program: constructing-composite-indicators
@@ -28,7 +22,7 @@ import java.util.Map;
 @ContainProcessResult
 public class FactorAnalysis extends Algorithm {
 
-    private int execOrder = AlgorithmExecOrder.WEIGHTING_AND_AGGREGATION;
+    private int execOrder = AlgorithmConstants.WEIGHTING_AND_AGGREGATION_ORDER;
 
     private String stepName = "weightingAndAggregation";
 

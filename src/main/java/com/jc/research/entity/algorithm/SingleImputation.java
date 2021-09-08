@@ -1,13 +1,13 @@
 package com.jc.research.entity.algorithm;
 
-import com.jc.research.util.AlgorithmExecOrder;
+import com.jc.research.util.AlgorithmConstants;
 import lombok.Data;
 import static com.jc.research.util.AlgorithmUtil.*;
 
 @Data
 public class SingleImputation extends Algorithm {
 
-    private int execOrder = AlgorithmExecOrder.MISS_DATA_IMPUTATION;
+    private int execOrder = AlgorithmConstants.MISS_DATA_IMPUTATION_ORDER;
 
     private String stepName = "missDataImputation";
 

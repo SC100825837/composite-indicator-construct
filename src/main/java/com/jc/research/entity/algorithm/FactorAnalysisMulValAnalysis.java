@@ -2,7 +2,7 @@ package com.jc.research.entity.algorithm;
 
 import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
 import com.jc.research.entity.algorithm.result.ProcessResult;
-import com.jc.research.util.AlgorithmExecOrder;
+import com.jc.research.util.AlgorithmConstants;
 import com.jc.research.util.AlgorithmUtil;
 import com.jc.research.util.ContainProcessResult;
 import lombok.Data;
@@ -22,7 +22,7 @@ import java.util.List;
 @ContainProcessResult
 public class FactorAnalysisMulValAnalysis extends Algorithm {
 
-    private int execOrder = AlgorithmExecOrder.MULTI_VARIATE_ANALYSIS;
+    private int execOrder = AlgorithmConstants.MULTI_VARIATE_ANALYSIS_ORDER;
 
     private String stepName = "multivariateAnalysis";
 

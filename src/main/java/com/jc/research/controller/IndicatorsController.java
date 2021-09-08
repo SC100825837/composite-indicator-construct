@@ -3,6 +3,7 @@ package com.jc.research.controller;
 import com.jc.research.entity.DTO.CalcExecParamDTO;
 import com.jc.research.entity.DTO.CalcResultGraphDTO;
 import com.jc.research.entity.DTO.GraphDTO;
+import com.jc.research.entity.DTO.ProcessResultDTO;
 import com.jc.research.service.AlgorithmService;
 import com.jc.research.service.impl.IndicatorsServiceImpl;
 import com.jc.research.util.R;
@@ -54,6 +55,15 @@ public class IndicatorsController {
 	public R calcMdComposite(@RequestBody Map<String, Double> mdBaseIndicatorMap) {
 		Double mdComposite = indicatorsServiceImpl.calcModifyBaseIndicator(mdBaseIndicatorMap);
 		return R.ok(mdComposite, "计算完成");
+	}
+
+	@GetMapping("/getProcessResult")
+	public R<ProcessResultDTO> getProcessResult() {
+		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData();
+		if (processData == null) {
+			return R.failed("数据为空");
+		}
+		return R.ok(processData);
 	}
 
 	@GetMapping("/getSecondNodes")

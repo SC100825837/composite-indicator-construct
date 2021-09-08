@@ -12,5 +12,5 @@ public class CoordinateDTO {
     private List<List<Double>> data;
     private int maxValue;
     private int minValue;
-
+    private String title;
 }

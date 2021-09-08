@@ -1,37 +1,40 @@
 package com.jc.research.entity.DTO;
 
-import com.jc.research.entity.TechnologyAchievementIndex;
 import lombok.Data;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class ProcessResultDTO {
 
     /**
      * 原始数据
+     * List<TechnologyAchievementIndex>
      */
-    private List<TechnologyAchievementIndex> originalData;
+    private Map<String, Object> originalData = new HashMap<>();
 
     /**
      * 缺失值插补
+     * List<TechnologyAchievementIndex>
      */
-    private List<TechnologyAchievementIndex> missDataImputation;
+    private Map<String, Object> missDataImputation = new HashMap<>();
 
     /**
      * 多变量分析
+     * Map<String, CoordinateDTO>
      */
-    private CoordinateDTO multivariateAnalysis;
+    private Map<String, Object> multivariateAnalysis = new HashMap<>();
 
     /**
      * 标准化
+     * List<TechnologyAchievementIndex>
      */
-    private List<TechnologyAchievementIndex> normalisation;
+    private Map<String, Object> normalisation = new HashMap<>();
 
     /**
      * 权重和聚合
+     * Map<String, CoordinateDTO>
      */
-    private List<CoordinateDTO> weightingAndAggregation = new ArrayList<>();
+    private Map<String, Object> weightingAndAggregation = new HashMap<>();
 
 }
