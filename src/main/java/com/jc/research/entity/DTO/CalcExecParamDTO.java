@@ -1,9 +1,11 @@
 package com.jc.research.entity.DTO;
 
+import com.jc.research.entity.TechnologyAchievementIndex;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @program: constructing-composite-indicators
@@ -12,12 +14,12 @@ import java.io.Serializable;
  * @create: 2021-08-30 09:37
  **/
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class CalcExecParamDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private AlgorithmsDTO algorithms;
 
-    private IndicatorConstructTargetDTO indicatorConstructTarget;
+    private Long targetId;
+
+    private List<TechnologyAchievementIndex> modifiedDataList;
 }

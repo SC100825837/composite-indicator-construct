@@ -3,6 +3,7 @@ package com.jc.research.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,7 +61,7 @@ public class AlgorithmUtil {
 
     /**
      * 计算方差
-     * @param Doubles
+     * @param doubles
      * @param average
      * @return
      */
@@ -84,7 +85,7 @@ public class AlgorithmUtil {
 
     /**
      * 求和方法
-     * @param Doubles
+     * @param doubles
      * @return
      */
     public static Double getSum(Double[] doubles) {
@@ -109,4 +110,18 @@ public class AlgorithmUtil {
         }
         return transposeMatrix;
     }
+
+    /**
+     * 按照规定小数点位数处理小数
+     *
+     * @param digit
+     * @param origin
+     * @return
+     */
+    public static Double handleFractional(int digit, Double origin) {
+        NumberFormat numberInstance = NumberFormat.getNumberInstance();
+        numberInstance.setMaximumFractionDigits(digit);
+        return Double.parseDouble(numberInstance.format(origin));
+    }
+
 }

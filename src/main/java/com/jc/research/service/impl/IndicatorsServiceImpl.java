@@ -4,11 +4,9 @@ import com.google.common.collect.Maps;
 import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
 import com.jc.research.entity.algorithm.Algorithm;
-import com.jc.research.entity.algorithm.FactorAnalysisMulValAnalysis;
 import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
-import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
 import com.jc.research.mapper.IndicatorsRepository;
 import com.jc.research.service.AlgorithmService;
@@ -25,9 +23,8 @@ import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import static com.jc.research.util.AlgorithmUtil.*;
 import java.lang.reflect.Field;
-import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -124,6 +121,11 @@ public class IndicatorsServiceImpl {
      */
     private Long constructObjId = 0L;
 
+    /**
+     * 判断数据集是否修改
+     */
+    private boolean ifDataSetModified = true;
+
     public List<SecondLevelIndicator> getSecondNodesByFirstNodeName() {
         List<SecondLevelIndicator> secondNodes = indicatorsRepository.getSecondNodesByFirstNodeName();
         System.out.println(secondNodes);
@@ -155,47 +157,48 @@ public class IndicatorsServiceImpl {
             //二级节点与一节点之间的关系
             RelationshipModel firstAndSecondShip = (RelationshipModel) record.get("rs2");
 
-			GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0, -1L);
-			if (node1 != null) {
-				nodes.add(node1);
-				//添加到图节点缓存中
-				graphNodeList.add(node1);
-			}
-			GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1, indicatorNode.getId());
-			if (node2 != null) {
-				nodes.add(node2);
+            GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0, -1L);
+            if (node1 != null) {
+                nodes.add(node1);
+                //添加到图节点缓存中
+                graphNodeList.add(node1);
+            }
+            GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1, indicatorNode.getId());
+            if (node2 != null) {
+                nodes.add(node2);
                 graphNodeList.add(node2);
-			}
-			GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2, firstLevelNode.getId());
-			if (node3 != null) {
-				nodes.add(node3);
+            }
+            GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2, firstLevelNode.getId());
+            if (node3 != null) {
+                nodes.add(node3);
                 graphNodeList.add(node3);
-			}
+            }
 
-			GraphEdge edge1 = createEdge(new GraphEdge(), indNodeAndFirstShip);
-			if (edge1 != null) {
-				edges.add(edge1);
-				graphEdgeList.add(edge1);
-			}
+            GraphEdge edge1 = createEdge(new GraphEdge(), indNodeAndFirstShip);
+            if (edge1 != null) {
+                edges.add(edge1);
+                graphEdgeList.add(edge1);
+            }
 
-			GraphEdge edge2 = createEdge(new GraphEdge(), firstAndSecondShip);
-			if (edge2 != null) {
-				edges.add(edge2);
+            GraphEdge edge2 = createEdge(new GraphEdge(), firstAndSecondShip);
+            if (edge2 != null) {
+                edges.add(edge2);
                 graphEdgeList.add(edge2);
-			}
+            }
 
         });
-		checkExitMap = new HashMap<>();
+        checkExitMap = new HashMap<>();
         return new GraphDTO(nodes, edges);
     }
 
 
-	/**
-	 * 创建节点
-	 * @param graphNode
-	 * @param nodeModel
-	 * @return
-	 */
+    /**
+     * 创建节点
+     *
+     * @param graphNode
+     * @param nodeModel
+     * @return
+     */
     private GraphNode createNode(GraphNode graphNode, NodeModel nodeModel, int category, Long parentId) {
         if (!check(nodeModel.getId())) {
             return null;
@@ -215,33 +218,35 @@ public class IndicatorsServiceImpl {
         return graphNode;
     }
 
-	/**
-	 * 创建连线
-	 * @param graphEdge
-	 * @param relationshipModel
-	 * @return
-	 */
+    /**
+     * 创建连线
+     *
+     * @param graphEdge
+     * @param relationshipModel
+     * @return
+     */
     private GraphEdge createEdge(GraphEdge graphEdge, RelationshipModel relationshipModel) {
         Long startNodeId = relationshipModel.getStartNode();
         Long endNodeId = relationshipModel.getEndNode();
         if (!check(startNodeId + "_" + endNodeId)) {
             return null;
         }
-		graphEdge.setSourceID(relationshipModel.getStartNode());
-		graphEdge.setTargetID(relationshipModel.getEndNode());
+        graphEdge.setSourceID(relationshipModel.getStartNode());
+        graphEdge.setTargetID(relationshipModel.getEndNode());
         List<Property<String, Object>> shipPropertyList2 = relationshipModel.getPropertyList();
         for (Property<String, Object> property : shipPropertyList2) {
-			graphEdge.getAttributes().put(property.getKey(), property.getValue());
+            graphEdge.getAttributes().put(property.getKey(), property.getValue());
         }
         return graphEdge;
     }
 
-	/**
-	 * 检查该节点或者连线是否创建
-	 * @param key
-	 * @return
-	 */
-	private boolean check(Object key) {
+    /**
+     * 检查该节点或者连线是否创建
+     *
+     * @param key
+     * @return
+     */
+    private boolean check(Object key) {
         if (!checkExitMap.containsKey(key)) {
             checkExitMap.put(key, "");
             return true;
@@ -250,25 +255,42 @@ public class IndicatorsServiceImpl {
         }
     }
 
-    /**
-     * 处理算法和数据
-     * @param calcExecParam
-     * @return
-     */
-    public CalcResultGraphDTO handleDataAndAlgorithm(CalcExecParamDTO calcExecParam) throws Exception {
+    public CalcResultGraphDTO calcHandler(CalcExecParamDTO calcExecParam) throws Exception {
         if (graphNodeList.isEmpty() || graphEdgeList.isEmpty()) {
             throw new Exception("数据异常，请尝试刷新页面");
         }
-        weightMap = new HashMap<>();
         //初始化数据，从数据库查询算法并实例化，从数据库查询指标构建对象
         Object[] dataAndAlgorithms = initAlgorithmAndConstructObj(calcExecParam);
-        //通过算法门面执行算法计算
-        AlgorithmExecResult execResult = AlgorithmFacade.calculate((Map<String, String>) dataAndAlgorithms[0], (Double[][]) dataAndAlgorithms[2]);
 
-        this.execResult = execResult;
+        return handleDataAndAlgorithm((Map<String, String>) dataAndAlgorithms[0], (Double[][]) dataAndAlgorithms[2], calcExecParam.getTargetId(), (Integer) dataAndAlgorithms[3]);
+    }
+
+    /**
+     * 进行综合指数计算
+     *
+     * @param algorithmMap          每一步的算法对象
+     * @param dataArrays            原始数据的二维数组
+     * @param targetId              构建对象的id
+     * @return
+     * @throws Exception
+     */
+    public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Double[][] dataArrays, Long targetId, int targetObjLine) throws Exception {
+        //判断数据集是否修改,没修改直接用缓存数据，修改了就重新计算
+        if (ifDataSetModified) {
+            //通过算法门面执行算法计算
+            this.execResult = AlgorithmFacade.calculate(algorithmMap, dataArrays);
+        }
+        weightMap = new HashMap<>();
+
+        //缺失值插补的结果
+        Double[][] missDataImputationArr = execResult.getMissDataImputation();
+        Double[] targetLineData = missDataImputationArr[targetObjLine];
+        TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
+        //定义基础指标值集合，key是基础指标名称，value是基础指标值，
+        Map<String, Double> baseIndicatorValueMap = new HashMap<>();
+
         //得到权重计算的最终结果，即权重值数组
         Double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
-        TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
         Field[] fields = tai.getClass().getDeclaredFields();
         int weightArrIndex = 0;
         for (Field field : fields) {
@@ -276,15 +298,13 @@ public class IndicatorsServiceImpl {
             if (field.getName().equals("id") || field.getName().equals("countryName")) {
                 continue;
             }
-            weightMap.put(field.getName(), baseIndicatorWeight[weightArrIndex++]);
+            weightMap.put(field.getName(), baseIndicatorWeight[weightArrIndex]);
+            baseIndicatorValueMap.put(field.getName(), targetLineData[weightArrIndex]);
+            weightArrIndex++;
         }
 
-//        Country country = (Country) dataAndAlgorithms[1];
-        //取出国家对象中的各基础指标值
-//        Map baseIndicatorDataMap = JSON.parseObject(country.getBaseIndicator(), Map.class);
-        baseIndicatorValueMap = (Map<String, Double>) dataAndAlgorithms[1];
         //初始化综合指标
-        Double compositeIndicator = (double) 0;
+        double compositeIndicator = 0;
         //计算综合指标数值
         for (Object baseIndicatorName : baseIndicatorValueMap.keySet()) {
             compositeIndicator += baseIndicatorValueMap.get(baseIndicatorName.toString()) * weightMap.get(baseIndicatorName.toString());
@@ -293,7 +313,7 @@ public class IndicatorsServiceImpl {
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         //构建带有指标值的图数据
-        constructIndicatorGraph(baseIndicatorValueMap, compositeIndicator, calcExecParam.getIndicatorConstructTarget().getId(), weightMap);
+        constructIndicatorGraph(baseIndicatorValueMap, compositeIndicator, targetId, weightMap);
 
         CalcResultGraphDTO calcResultGraphDTO = new CalcResultGraphDTO();
         calcResultGraphDTO.setAlgorithmExecResult(execResult);
@@ -306,15 +326,31 @@ public class IndicatorsServiceImpl {
     }
 
     /**
+     * 获取原始数据集
+     *
+     * @return
+     */
+    public List<TechnologyAchievementIndex> getOriginDataList() {
+        if (this.taiDataList == null || this.taiDataList.isEmpty()) {
+            this.taiDataList = taiService.list();
+        }
+        return this.taiDataList;
+    }
+
+    /**
      * 拿到计算过程数据,封装对象并返回
      */
     public ProcessResultDTO getProcessData() {
 
+        if (this.execResult == null) {
+            return null;
+        }
         return createWebDTO(this.execResult);
     }
 
     /**
      * 拿到计算过程数据,封装对象并返回
+     *
      * @param execResult
      */
     private ProcessResultDTO createWebDTO(AlgorithmExecResult execResult) {
@@ -326,9 +362,9 @@ public class IndicatorsServiceImpl {
         processResultDTO.getOriginalData().put("isContainPR", false);
         processResultDTO.getOriginalData().put("data", taiDataList);
 
-        //缺失值填补
+        //缺失值插补
         Double[][] missDataImputationArr = execResult.getMissDataImputation();
-        //创建新的集合，用来存储缺失值填补算法返回的数据
+        //创建新的集合，用来存储缺失值插补算法返回的数据
         List<TechnologyAchievementIndex> missDataImputationList = new ArrayList<>();
         try {
             for (int i = 0; i < taiDataList.size(); i++) {
@@ -341,7 +377,7 @@ public class IndicatorsServiceImpl {
                 Field[] fields = taiObj.getClass().getDeclaredFields();
                 for (int j = 0; j < fields.length; j++) {
                     fields[j].setAccessible(true);
-                    //缺失值填补返回的数据没有这两项，直接跳过
+                    //缺失值插补返回的数据没有这两项，直接跳过
                     if (fields[j].getName().equals("id") || fields[j].getName().equals("countryName")) {
                         continue;
                     }
@@ -405,7 +441,7 @@ public class IndicatorsServiceImpl {
                 Field[] fields = taiObj.getClass().getDeclaredFields();
                 for (int j = 0; j < fields.length; j++) {
                     fields[j].setAccessible(true);
-                    //缺失值填补返回的数据没有这两项，直接跳过
+                    //缺失值插补返回的数据没有这两项，直接跳过
                     if (fields[j].getName().equals("id") || fields[j].getName().equals("countryName")) {
                         continue;
                     }
@@ -510,17 +546,18 @@ public class IndicatorsServiceImpl {
 
     /**
      * 构建带有指标值的图数据
+     *
      * @param baseIndicatorDataMap
      * @param compositeIndicator
      */
     private void constructIndicatorGraph(Map baseIndicatorDataMap, Double compositeIndicator, Long id, Map<String, Double> weightMap) {
-        //先从缓存中取数据，如果没有数据则重新构建
-        if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty() && constructObjId.equals(id)) {
+        //如果对象一样，就判断数据集是否修改,没修改直接用缓存数据
+        if (constructObjId.equals(id) && !ifDataSetModified) {
             return;
         }
         if (!indicatorGraphNodeList.isEmpty() && !indicatorGraphEdgeList.isEmpty()) {
-            indicatorGraphNodeList.clear();
-            indicatorGraphEdgeList.clear();
+            indicatorGraphNodeList = new ArrayList<>();
+            indicatorGraphEdgeList = new ArrayList<>();
         }
         indicatorGraphNodeList.addAll(graphNodeList);
         indicatorGraphEdgeList.addAll(graphEdgeList);
@@ -579,6 +616,8 @@ public class IndicatorsServiceImpl {
 
         //指标id计数器重置为原图数据的最大id
         indicatorNodeId = currentMaxNodeId;
+
+        this.ifDataSetModified = false;
     }
 
     /**
@@ -595,23 +634,28 @@ public class IndicatorsServiceImpl {
         for (Algorithm algorithm : algorithms) {
             algorithmMap.put(algorithm.getStepName(), algorithm.getFullClassName() == null ? "" : algorithm.getFullClassName());
         }
-        /*Country country = countryService.getById(calcExecParam.getIndicatorConstructTarget().getId());
-        if (country == null) {
-            return null;
-        }*/
         TechnologyAchievementIndex targetTaiObj = new TechnologyAchievementIndex();
-        //缓存中没有数据集的数据时从数据库取出并放入缓存
-        if (taiDataList == null || taiDataList.isEmpty()) {
-            taiDataList = taiService.list();
+        if (calcExecParam.getModifiedDataList() == null || calcExecParam.getModifiedDataList().isEmpty()) {
+            //缓存中没有数据集的数据时从数据库取出并放入缓存
+            if (taiDataList == null || taiDataList.isEmpty()) {
+                taiDataList = taiService.list();
+            }
+        } else {
+            //拿到修改后的数据集
+            taiDataList = calcExecParam.getModifiedDataList();
+            this.ifDataSetModified = true;
         }
-        Double[][] taiDataRows = new Double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
+
+        int targetObjLine = 0;
+        Double[][] originDataArr = new Double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
         for (int i = 0; i < taiDataList.size(); i++) {
-            if (taiDataList.get(i).getId().equals(calcExecParam.getIndicatorConstructTarget().getId())) {
+            if (taiDataList.get(i).getId().equals(calcExecParam.getTargetId())) {
                 targetTaiObj = taiDataList.get(i);
+                targetObjLine = i;
             }
             Double[] row = {taiDataList.get(i).getPatents(), taiDataList.get(i).getRoyalties(), taiDataList.get(i).getInternet(), taiDataList.get(i).getExports(),
                     taiDataList.get(i).getTelephones(), taiDataList.get(i).getElectricity(), taiDataList.get(i).getSchooling(), taiDataList.get(i).getUniversity()};
-            taiDataRows[i] = row;
+            originDataArr[i] = row;
         }
 
         if (targetTaiObj.getId() == null) {
@@ -632,11 +676,12 @@ public class IndicatorsServiceImpl {
                 e.printStackTrace();
             }
         }
-        return new Object[]{algorithmMap, indicatorValueMap, taiDataRows};
+        return new Object[]{algorithmMap, indicatorValueMap, originDataArr, targetObjLine};
     }
 
     /**
      * 计算基础指标值修改之后的综合指标值
+     *
      * @param mdBaseIndicatorMap
      * @return
      */
@@ -656,16 +701,33 @@ public class IndicatorsServiceImpl {
     }
 
     /**
-     * 按照规定小数点位数处理小数
-     *
-     * @param digit
-     * @param origin
+     * 清楚所有缓存，重置数据
      * @return
      */
-    private Double handleFractional(int digit, Double origin) {
-        NumberFormat numberInstance = NumberFormat.getNumberInstance();
-        numberInstance.setMaximumFractionDigits(digit);
-        return Double.parseDouble(numberInstance.format(origin));
+    public boolean resetData() {
+        this.graphNodeList = new ArrayList<>();
+        this.graphEdgeList = new ArrayList<>();
+        this.indicatorGraphNodeList = new ArrayList<>();
+        this.indicatorGraphEdgeList = new ArrayList<>();
+
+        this.currentMaxNodeId = 0L;
+        this.indicatorNodeId = this.currentMaxNodeId;
+
+        this.category = 0;
+
+        this.checkExitMap = new HashMap<>();
+
+        this.taiDataList = new ArrayList<>();
+
+        this.weightMap = new HashMap<>();
+        this.baseIndicatorValueMap = new HashMap<>();
+
+        this.execResult = null;
+
+        this.constructObjId = 0L;
+
+        this.ifDataSetModified = true;
+        return true;
     }
 
     /**

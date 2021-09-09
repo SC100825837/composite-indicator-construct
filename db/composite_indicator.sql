@@ -52,7 +52,7 @@ CREATE TABLE `algorithm_exec_step`  (
 -- ----------------------------
 -- Records of algorithm_exec_step
 -- ----------------------------
-INSERT INTO `algorithm_exec_step` VALUES (1, '缺失值填补', 'missDataImputation', 1);
+INSERT INTO `algorithm_exec_step` VALUES (1, '缺失值插补', 'missDataImputation', 1);
 INSERT INTO `algorithm_exec_step` VALUES (2, '多变量分析', 'multivariateAnalysis', 2);
 INSERT INTO `algorithm_exec_step` VALUES (3, '标准化', 'normalisation', 3);
 INSERT INTO `algorithm_exec_step` VALUES (4, '权重和聚合', 'weightingAndAggregation', 4);
