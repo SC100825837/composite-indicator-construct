@@ -1,3 +1,5 @@
 /target/
 /composite-indicator-construct.iml
 /.idea/
+/src/main/resources/static/static/
+/src/main/resources/static/index.html
