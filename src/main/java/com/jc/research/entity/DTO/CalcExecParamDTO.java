@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 前端传递的算法执行参数封装对象
  * @author: SunChao
  * @create: 2021-08-30 09:37

@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>com.jc.research</groupId>
-    <artifactId>constructing-composite-indicators</artifactId>
+    <artifactId>composite-indicator-construct</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>

@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 因子分析的过程结果
  * @author: SunChao
  * @create: 2021-08-23 15:28

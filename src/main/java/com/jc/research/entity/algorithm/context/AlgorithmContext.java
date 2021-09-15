@@ -9,7 +9,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 算法包装类,对外提供算法的执行方法，其余方法进行封装
  * @author: SunChao
  * @create: 2021-08-17 16:11

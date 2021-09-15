@@ -19,7 +19,7 @@ public class DataCleaning {
     public void getPyCsv() throws IOException {
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
-                        new FileInputStream("F:/Java/workSpace/constructing-composite-indicators/db/raw_data.txt")));
+                        new FileInputStream("F:/Java/workSpace/composite-indicator-construct/db/raw_data.txt")));
         int count = 0;
         String numberStr;
         while ((numberStr = reader.readLine()) != null) {
@@ -35,7 +35,7 @@ public class DataCleaning {
     public void getPyArr() throws IOException {
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
-                        new FileInputStream("F:/Java/workSpace/constructing-composite-indicators/db/raw_data.txt")));
+                        new FileInputStream("F:/Java/workSpace/composite-indicator-construct/db/raw_data.txt")));
         int count = 0;
         String numberStr;
         while ((numberStr = reader.readLine()) != null) {

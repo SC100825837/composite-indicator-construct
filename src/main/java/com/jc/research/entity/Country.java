@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description:
  * @author: SunChao
  * @create: 2021-08-26 09:35

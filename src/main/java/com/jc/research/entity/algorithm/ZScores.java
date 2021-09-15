@@ -5,7 +5,7 @@ import lombok.Data;
 import static com.jc.research.util.AlgorithmUtil.*;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: z-scores
  * @author: SunChao
  * @create: 2021-08-17 16:03

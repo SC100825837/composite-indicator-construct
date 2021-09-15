@@ -6,7 +6,7 @@ import lombok.*;
 import java.io.Serializable;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 算法和构造对象的参数封装
  * @author: SunChao
  * @create: 2021-08-27 09:43

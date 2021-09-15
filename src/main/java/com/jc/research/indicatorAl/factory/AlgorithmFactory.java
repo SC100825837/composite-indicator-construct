@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 算法工厂,根据算法名称创建算法对象
  * @author: SunChao
  * @create: 2021-08-17 16:07

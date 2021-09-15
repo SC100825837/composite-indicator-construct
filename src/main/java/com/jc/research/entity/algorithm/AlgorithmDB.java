@@ -1,7 +1,7 @@
 package com.jc.research.entity.algorithm;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 模拟算法数据库
  * @author: SunChao
  * @create: 2021-08-17 16:08

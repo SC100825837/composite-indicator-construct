@@ -8,7 +8,7 @@ import lombok.*;
 import java.util.List;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description:
  * @author: SunChao
  * @create: 2021-08-27 15:36

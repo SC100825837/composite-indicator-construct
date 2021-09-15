@@ -8,7 +8,7 @@ import com.jc.research.indicatorAl.factory.AlgorithmFactory;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 算法门面
  * @author: SunChao
  * @create: 2021-08-17 16:16

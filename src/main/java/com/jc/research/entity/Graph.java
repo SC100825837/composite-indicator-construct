@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description:
  * @author: SunChao
  * @create: 2021-08-27 14:53

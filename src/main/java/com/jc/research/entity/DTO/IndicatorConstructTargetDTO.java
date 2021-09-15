@@ -9,7 +9,7 @@ import org.springframework.data.annotation.Id;
 import java.io.Serializable;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 指数构建对象
  * @author: SunChao
  * @create: 2021-08-30 09:58

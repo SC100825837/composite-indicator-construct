@@ -7,7 +7,7 @@ import com.jc.research.entity.TechnologyAchievementIndex;
 import java.util.List;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description:
  * @author: SunChao
  * @create: 2021-08-25 18:56

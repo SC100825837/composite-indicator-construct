@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 基于因子分析的权重聚合算法
  * @author: SunChao
  * @create: 2021-08-17 16:04

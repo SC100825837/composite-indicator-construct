@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 接收前端参数封装成对象（key: 算法名称，value:算法id）
  * @author: SunChao
  * @create: 2021-08-30 10:06

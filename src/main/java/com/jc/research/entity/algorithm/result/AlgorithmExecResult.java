@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Arrays;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description: 一系列算法执行结果的最终对象，用来保存 缺失数据插补、多变量分析、标准化、权重和聚合等方法执行后的结果
  * 每个属性对应着每一个步骤的算法结果
  * @author: SunChao

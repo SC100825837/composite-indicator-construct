@@ -3,7 +3,7 @@ package com.jc.research.entity;
 import lombok.*;
 
 /**
- * @program: constructing-composite-indicators
+ * @program: composite-indicator-construct
  * @description:
  * @author: SunChao
  * @create: 2021-08-27 14:49
