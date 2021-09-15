@@ -11,7 +11,7 @@
  Target Server Version : 50730
  File Encoding         : 65001
 
- Date: 06/09/2021 09:16:31
+ Date: 11/09/2021 11:33:02
 */
 
 SET NAMES utf8mb4;
@@ -34,8 +34,10 @@ CREATE TABLE `algorithm`  (
 -- ----------------------------
 -- Records of algorithm
 -- ----------------------------
-INSERT INTO `algorithm` VALUES (1, 'FactorAnalysis', '因子分析', 'com.jc.research.entity.algorithm.FactorAnalysis', 'weightingAndAggregation', 2);
-INSERT INTO `algorithm` VALUES (2, 'ZScores', 'z分数', 'com.jc.research.entity.algorithm.ZScores', 'normalisation', 1);
+INSERT INTO `algorithm` VALUES (1, 'FactorAnalysis', '因子分析', 'com.jc.research.entity.algorithm.FactorAnalysis', 'weightingAndAggregation', 4);
+INSERT INTO `algorithm` VALUES (2, 'ZScores', 'z分数', 'com.jc.research.entity.algorithm.ZScores', 'normalisation', 3);
+INSERT INTO `algorithm` VALUES (3, 'FactorAnalysisMulValAnalysis', '因子分析', 'com.jc.research.entity.algorithm.FactorAnalysisMulValAnalysis', 'multivariateAnalysis', 2);
+INSERT INTO `algorithm` VALUES (4, 'SingleImputation', '单一插补', 'com.jc.research.entity.algorithm.SingleImputation', 'missDataImputation', 1);
 
 -- ----------------------------
 -- Table structure for algorithm_exec_step
@@ -52,7 +54,7 @@ CREATE TABLE `algorithm_exec_step`  (
 -- ----------------------------
 -- Records of algorithm_exec_step
 -- ----------------------------
-INSERT INTO `algorithm_exec_step` VALUES (1, '缺失值插补', 'missDataImputation', 1);
+INSERT INTO `algorithm_exec_step` VALUES (1, '缺失值填补', 'missDataImputation', 1);
 INSERT INTO `algorithm_exec_step` VALUES (2, '多变量分析', 'multivariateAnalysis', 2);
 INSERT INTO `algorithm_exec_step` VALUES (3, '标准化', 'normalisation', 3);
 INSERT INTO `algorithm_exec_step` VALUES (4, '权重和聚合', 'weightingAndAggregation', 4);

@@ -33,7 +33,7 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
     public ProcessResult exec(Double[][] matrix) {
         String doublesStr = Arrays.deepToString(matrix);
 
-        String[] pyArgs = {"F:/Python/project/composite-indicator-construct/venv/Scripts/python", "F:/Python/project/composite-indicator-construct/FactorAnalysisMulValAnalysis.py", doublesStr};
+        String[] pyArgs = {AlgorithmUtil.getPythonEnvPath(), AlgorithmUtil.getPythonAlgorithmPath() + "FactorAnalysisMulValAnalysis.py", doublesStr};
         String calcResultLine = "";
         StringBuilder copyResultStr = new StringBuilder();
         try {

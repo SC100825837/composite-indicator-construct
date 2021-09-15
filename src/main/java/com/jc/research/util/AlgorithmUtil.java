@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * @program: constructing-composite-indicators
@@ -14,6 +15,22 @@ import java.util.List;
  * @create: 2021-08-23 14:32
  **/
 public class AlgorithmUtil {
+
+    /**
+     * 获得python虚拟环境路径
+     * @return
+     */
+    public static String getPythonEnvPath() {
+        return PropertiesUtil.getProperties("application.properties").getProperty("python.env.path");
+    }
+
+    /**
+     * 获取python算法路径
+     * @return
+     */
+    public static String getPythonAlgorithmPath() {
+        return PropertiesUtil.getProperties("application.properties").getProperty("python.algorithm.path");
+    }
 
     /**
      * 将字符串类型的二维数组转换成Double类型的二维数组
