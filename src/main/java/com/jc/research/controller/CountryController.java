@@ -24,37 +24,15 @@ import java.util.List;
 public class CountryController {
 
     @Autowired
-    private CountryService countryService;
-
-    @Autowired
     private TAIService taiService;
 
     @GetMapping("/getAllCountrys")
-    public R<List<Country>> getAllAlgorithm() {
+    public R<List<Country>> getAllCountrys() {
         List<Country> allCountrys = taiService.getAllCountryList();
         if (allCountrys.isEmpty()) {
             return R.failed(null, "数据为空");
         }
         return R.ok(allCountrys);
-    }
-
-    @GetMapping("/save")
-    public R save() {
-        Country country = new Country();
-//        country.setCountryName("芬兰");
-//        String baseIndicator = "{\"PATENTS\":187,\"ROYALTIES\":125.6,\"INTERNET\":200.2,\"EXPORTS\":50.7,\"TELEPHONES\":3.08,\"ELECTRICITY\":4.15,\"SCHOOLING\":10,\"UNIVERSITY\":27.4}";
-
-        country.setCountryName("美国");
-        String baseIndicator = "{\"PATENTS\":289,\"ROYALTIES\":130,\"INTERNET\":179.1,\"EXPORTS\":66.2,\"TELEPHONES\":3.00,\"ELECTRICITY\":4.07,\"SCHOOLING\":12,\"UNIVERSITY\":13.9}";
-
-        country.setBaseIndicator(baseIndicator);
-
-        boolean saveFlag = countryService.save(country);
-        if (saveFlag) {
-            return R.ok(null, "保存成功");
-        } else {
-            return R.failed("保存失败");
-        }
     }
 
 }

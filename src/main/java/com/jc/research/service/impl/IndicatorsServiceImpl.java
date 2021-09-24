@@ -1,6 +1,6 @@
 package com.jc.research.service.impl;
 
-import com.google.common.collect.Maps;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
 import com.jc.research.entity.algorithm.Algorithm;
@@ -9,17 +9,10 @@ import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
 import com.jc.research.mapper.IndicatorsRepository;
-import com.jc.research.service.AlgorithmService;
-import com.jc.research.service.CountryService;
-import com.jc.research.service.TAIService;
+import com.jc.research.service.*;
 import com.jc.research.util.AlgorithmConstants;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.neo4j.ogm.model.Property;
-import org.neo4j.ogm.model.Result;
-import org.neo4j.ogm.response.model.NodeModel;
-import org.neo4j.ogm.response.model.RelationshipModel;
-import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,17 +40,16 @@ public class IndicatorsServiceImpl {
     private AlgorithmService algorithmService;
 
     @Autowired
-    private CountryService countryService;
-
-    @Autowired
     private TAIService taiService;
 
-    /**
-     * 指数图对象的缓存集合(层级结构)
-     * 创建前端规定的节点对象集合，其中key为节点id，value为前端格式节点对象
-     */
-    @Getter
-    private Map<Long, TierGraphDTO> tierGraphNodeMap = new HashMap<>();
+    @Autowired
+    private CiFrameworkObjectService ciFrameworkObjectService;
+
+    @Autowired
+    private CiFrameworkIndicatorService ciFrameworkIndicatorService;
+
+    @Autowired
+    private CiFrameworkTreepathService ciFrameworkTreepathService;
 
     /**
      * 基础图对象的缓存集合(平铺结构)，只包含基础结构的节点
@@ -69,27 +61,22 @@ public class IndicatorsServiceImpl {
     private List<GraphEdge> graphEdgeList = new ArrayList<>();
 
     /**
+     * 记录当前最大的节点id，用来设置带数值的节点id
+     */
+    private Long currentMaxNodeId = 0L;
+
+    /**
+     * 节点类型
+     */
+    private int category = 0;
+
+    /**
      * 指数图对象的缓存集合，既包含基础节点，也包含增加的指数节点
      */
     @Getter
     private List<GraphNode> indicatorGraphNodeList = new ArrayList<>();
     @Getter
     private List<GraphEdge> indicatorGraphEdgeList = new ArrayList<>();
-
-    /**
-     * 记录当前最大的节点id，用来设置带数值的节点id
-     */
-    private Long currentMaxNodeId = 0L;
-
-    /**
-     * 指标节点id计数器
-     */
-    private Long indicatorNodeId = currentMaxNodeId;
-
-    /**
-     * 节点类型
-     */
-    private int category = 0;
 
     /**
      * 校验集合，创建节点时判断该节点或连线是否已创建
@@ -99,7 +86,7 @@ public class IndicatorsServiceImpl {
     /**
      * 科技成就指数数据缓存
      */
-    private List<TechnologyAchievementIndex> taiDataList;
+    private List<TechnologyAchievementIndex> taiDataList = new ArrayList<>();
 
     /**
      * 权重map，key为指标名称，value为权重值
@@ -126,118 +113,121 @@ public class IndicatorsServiceImpl {
      */
     private boolean ifDataSetModified = true;
 
-    public List<SecondLevelIndicator> getSecondNodesByFirstNodeName() {
-        List<SecondLevelIndicator> secondNodes = indicatorsRepository.getSecondNodesByFirstNodeName();
-        System.out.println(secondNodes);
-        return secondNodes;
-    }
-
+    /**
+     * 获取基础的图数据模型
+     * @return
+     */
     public GraphDTO getBaseGraph() {
+        Long ciFrameworkObjectId = 36L;
         //先从缓存中取数据，如果没有数据则重新构建
         if (!graphNodeList.isEmpty() && !graphEdgeList.isEmpty()) {
             return new GraphDTO(graphNodeList, graphEdgeList);
         }
-        Session session = sessionFactory.openSession();
-        String cypherString = "MATCH (indicators:CompositeIndicators) <-[rs1:CONSTITUTE]- (fl:First_level_Indicator) <-[rs2:CONSTITUTE]- (sl:Second_level_Indicator)\n" +
-                "return indicators,fl,sl,rs1,rs2";
-        //执行查询
-        List<GraphNode> nodes = new ArrayList<>();
-        List<GraphEdge> edges = new ArrayList<>();
-        Result query = session.query(cypherString, Maps.newHashMap());
-        query.forEach(record -> {
-            //根据查询语句的变量取出变量所对应的节点数据
-            //根节点
-            NodeModel indicatorNode = (NodeModel) record.get("indicators");
-            //一级节点
-            NodeModel firstLevelNode = (NodeModel) record.get("fl");
-            //二级节点
-            NodeModel secondLevelNode = (NodeModel) record.get("sl");
-            //一级节点与根节点之间的关系
-            RelationshipModel indNodeAndFirstShip = (RelationshipModel) record.get("rs1");
-            //二级节点与一节点之间的关系
-            RelationshipModel firstAndSecondShip = (RelationshipModel) record.get("rs2");
+        //每次需要重新构造数据时，初始化所有数据
+        resetData();
 
-            GraphNode node1 = createNode(new GraphNode(), indicatorNode, 0, -1L);
-            if (node1 != null) {
-                nodes.add(node1);
-                //添加到图节点缓存中
-                graphNodeList.add(node1);
-            }
-            GraphNode node2 = createNode(new GraphNode(), firstLevelNode, 1, indicatorNode.getId());
-            if (node2 != null) {
-                nodes.add(node2);
-                graphNodeList.add(node2);
-            }
-            GraphNode node3 = createNode(new GraphNode(), secondLevelNode, 2, firstLevelNode.getId());
-            if (node3 != null) {
-                nodes.add(node3);
-                graphNodeList.add(node3);
-            }
+        // 查询最大id
+        CiFrameworkIndicator indicatorWithMaxId = ciFrameworkIndicatorService.getBaseMapper()
+                .selectOne(new QueryWrapper<CiFrameworkIndicator>()
+                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+                        .orderByDesc("id")
+                        .last("limit 1"));
+        if (indicatorWithMaxId != null) {
+            this.currentMaxNodeId = indicatorWithMaxId.getId();
+        }
 
-            GraphEdge edge1 = createEdge(new GraphEdge(), indNodeAndFirstShip);
-            if (edge1 != null) {
-                edges.add(edge1);
-                graphEdgeList.add(edge1);
-            }
 
-            GraphEdge edge2 = createEdge(new GraphEdge(), firstAndSecondShip);
-            if (edge2 != null) {
-                edges.add(edge2);
-                graphEdgeList.add(edge2);
-            }
+        // 查询最大层级，把层级当做前端显示的类别
+        CiFrameworkIndicator indicatorWithMaxLevel = ciFrameworkIndicatorService.getBaseMapper()
+                .selectOne(new QueryWrapper<CiFrameworkIndicator>()
+                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+                        .orderByDesc("indicator_level")
+                        .last("limit 1"));
 
-        });
-        checkExitMap = new HashMap<>();
-        return new GraphDTO(nodes, edges);
+        if (indicatorWithMaxLevel != null) {
+            this.category = indicatorWithMaxLevel.getIndicatorLevel();
+        }
+
+        CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
+
+        // 创建根节点
+        GraphNode rootNode = new GraphNode();
+        // 设置根节点的id
+        rootNode.setId(++this.currentMaxNodeId);
+        rootNode.setParentId(-1L);
+        //设置根节点的类别
+        rootNode.setCategory(++this.category);
+        rootNode.getAttributes().put("name", "综合指数");
+        this.graphNodeList.add(rootNode);
+
+        // 查询父子级别  也就是相邻的层级结构
+        List<CiFrameworkTreepath> treepathList = ciFrameworkTreepathService.getBaseMapper()
+                .selectList(new QueryWrapper<CiFrameworkTreepath>()
+                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+                        .eq("path_depth", 1));
+
+        // 遍历层级结构，根据结构查询节点
+        for (CiFrameworkTreepath treepath : treepathList) {
+            // 查询后代位置的节点
+            CiFrameworkIndicator indicator = ciFrameworkIndicatorService
+                    .getOne(new QueryWrapper<CiFrameworkIndicator>()
+                            .eq("ci_framework_object_id", ciFrameworkObjectId)
+                            .eq("id", treepath.getDescendant())
+                            .lt("indicator_level", ciFrameworkObject.getDataFirstColumn()));
+
+            if (indicator == null) {
+                continue;
+            }
+            // 获取该节点的 层级
+            Integer indicatorLevel = indicator.getIndicatorLevel();
+            // 如果层级为1，说明这个结构代表excel的前两列，也就是第一和第二指标
+            if (indicatorLevel.equals(1)) {
+                // 获取该结构的祖先级节点
+                CiFrameworkIndicator firstLevelIndicator = ciFrameworkIndicatorService
+                        .getOne(new QueryWrapper<CiFrameworkIndicator>()
+                                .eq("ci_framework_object_id", ciFrameworkObjectId)
+                                .eq("id", treepath.getAncestor()));
+                if (firstLevelIndicator == null) {
+                    continue;
+                }
+                // 创建excel中各一级指标节点
+                createBaseNode(firstLevelIndicator, rootNode.getId());
+                // 创建综合指数节点和excel中各一级指标节点的连线
+                createBaseEdge(new CiFrameworkTreepath(rootNode.getId(), firstLevelIndicator.getId(), 1, ciFrameworkObjectId));
+
+            }
+            createBaseNode(indicator, treepath.getAncestor());
+            createBaseEdge(treepath);
+        }
+        return new GraphDTO(this.graphNodeList, this.graphEdgeList);
     }
-
 
     /**
      * 创建节点
-     *
-     * @param graphNode
-     * @param nodeModel
-     * @return
      */
-    private GraphNode createNode(GraphNode graphNode, NodeModel nodeModel, int category, Long parentId) {
-        if (!check(nodeModel.getId())) {
-            return null;
-        }
-        if (currentMaxNodeId <= nodeModel.getId()) {
-            currentMaxNodeId = nodeModel.getId();
-            indicatorNodeId = currentMaxNodeId;
-        }
-        graphNode.setId(nodeModel.getId());
-        graphNode.setLbName(nodeModel.getLabels()[0]);
-        graphNode.setCategory(category);
+    private void createBaseNode(CiFrameworkIndicator indicator, Long parentId) {
+        GraphNode graphNode = new GraphNode();
+        graphNode.setId(indicator.getId());
+        graphNode.setCategory(indicator.getIndicatorLevel());
         graphNode.setParentId(parentId);
-        List<Property<String, Object>> propertyList = nodeModel.getPropertyList();
-        for (Property<String, Object> property : propertyList) {
-            graphNode.getAttributes().put(property.getKey(), property.getValue());
+        graphNode.getAttributes().put("name", indicator.getIndicatorName());
+        if (check(indicator.getId())) {
+            this.graphNodeList.add(graphNode);
         }
-        return graphNode;
     }
 
     /**
      * 创建连线
-     *
-     * @param graphEdge
-     * @param relationshipModel
-     * @return
      */
-    private GraphEdge createEdge(GraphEdge graphEdge, RelationshipModel relationshipModel) {
-        Long startNodeId = relationshipModel.getStartNode();
-        Long endNodeId = relationshipModel.getEndNode();
-        if (!check(startNodeId + "_" + endNodeId)) {
-            return null;
+    private void createBaseEdge(CiFrameworkTreepath treepath) {
+        Long targetId = treepath.getAncestor();
+        Long sourceId = treepath.getDescendant();
+        GraphEdge graphEdge = new GraphEdge();
+        graphEdge.setSourceId(sourceId);
+        graphEdge.setTargetId(targetId);
+        if (check(sourceId + "_" + targetId)) {
+            this.graphEdgeList.add(graphEdge);
         }
-        graphEdge.setSourceID(relationshipModel.getStartNode());
-        graphEdge.setTargetID(relationshipModel.getEndNode());
-        List<Property<String, Object>> shipPropertyList2 = relationshipModel.getPropertyList();
-        for (Property<String, Object> property : shipPropertyList2) {
-            graphEdge.getAttributes().put(property.getKey(), property.getValue());
-        }
-        return graphEdge;
     }
 
     /**
@@ -567,7 +557,7 @@ public class IndicatorsServiceImpl {
             if (graphNode.getCategory() == 2) {
                 //创建指标节点，并设置属性
                 GraphNode baseIndicatorDataNode = new GraphNode();
-                baseIndicatorDataNode.setId(++indicatorNodeId);
+                baseIndicatorDataNode.setId(++this.currentMaxNodeId);
                 baseIndicatorDataNode.getAttributes().put("indicatorValue", baseIndicatorDataMap.get(graphNode.getAttributes().get("name").toString()));
                 baseIndicatorDataNode.setCategory(3);
                 baseIndicatorDataNode.setLbName("基础指标值");
@@ -575,7 +565,7 @@ public class IndicatorsServiceImpl {
 
                 //创建权重节点，并设置属性
                 GraphNode weightNode = new GraphNode();
-                weightNode.setId(++indicatorNodeId);
+                weightNode.setId(++this.currentMaxNodeId);
                 weightNode.getAttributes().put("indicatorValue", handleFractional(2, weightMap.get(graphNode.getAttributes().get("name").toString())));
                 weightNode.setCategory(4);
                 weightNode.setLbName("权重值");
@@ -583,12 +573,12 @@ public class IndicatorsServiceImpl {
 
                 //创建连线，并设置属性，基础指标节点由指标值指向 通用指标名称
                 GraphEdge indicatorGraphEdge = new GraphEdge();
-                indicatorGraphEdge.setSourceID(baseIndicatorDataNode.getId());
-                indicatorGraphEdge.setTargetID(graphNode.getId());
+                indicatorGraphEdge.setSourceId(baseIndicatorDataNode.getId());
+                indicatorGraphEdge.setTargetId(graphNode.getId());
                 //创建连线，并设置属性，权重节点 指向 通用指标名称
                 GraphEdge weightGraphEdge = new GraphEdge();
-                weightGraphEdge.setSourceID(weightNode.getId());
-                weightGraphEdge.setTargetID(graphNode.getId());
+                weightGraphEdge.setSourceId(weightNode.getId());
+                weightGraphEdge.setTargetId(graphNode.getId());
 
                 indicatorGraphNodeList.add(baseIndicatorDataNode);
                 indicatorGraphNodeList.add(weightNode);
@@ -599,23 +589,20 @@ public class IndicatorsServiceImpl {
         }
         //创建综合指标值节点，并设置属性
         GraphNode compIndGraphNode = new GraphNode();
-        compIndGraphNode.setId(++indicatorNodeId);
+        compIndGraphNode.setId(++this.currentMaxNodeId);
         compIndGraphNode.getAttributes().put("indicatorValue", compositeIndicator);
         compIndGraphNode.setLbName("综合指标值");
         compIndGraphNode.setCategory(5);
         compIndGraphNode.setParentId(-1L);
         //创建连线，并设置属性，综合指标值节点由 指标值 指向 通用指标名称
         GraphEdge graphEdge = new GraphEdge();
-        graphEdge.setSourceID(compIndGraphNode.getId());
-        graphEdge.setTargetID(graphNodeList.get(0).getId());
+        graphEdge.setSourceId(compIndGraphNode.getId());
+        graphEdge.setTargetId(graphNodeList.get(0).getId());
 
         //将综合指标值节点放入缓存
         indicatorGraphNodeList.add(compIndGraphNode);
         //将新创建的综合指标值和通用综合指标名称的连线关系放入缓存
         indicatorGraphEdgeList.add(graphEdge);
-
-        //指标id计数器重置为原图数据的最大id
-        indicatorNodeId = currentMaxNodeId;
 
         this.ifDataSetModified = false;
     }
@@ -627,13 +614,17 @@ public class IndicatorsServiceImpl {
      * @return
      */
     private Object[] initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) throws Exception {
+        //获取所有算法的id
         Map<String, Long> algorithmIdMap = calcExecParam.getAlgorithms().getAllAlgorithmIds();
+        // 根据算法id查询算法对象
         List<Algorithm> algorithms = algorithmService.listByIds(algorithmIdMap.values());
 
+        //key是算法步骤名称，value是算法的全类名
         Map<String, String> algorithmMap = new HashMap<>();
         for (Algorithm algorithm : algorithms) {
             algorithmMap.put(algorithm.getStepName(), algorithm.getFullClassName() == null ? "" : algorithm.getFullClassName());
         }
+        // 创建科技成就指数对象
         TechnologyAchievementIndex targetTaiObj = new TechnologyAchievementIndex();
         if (calcExecParam.getModifiedDataList() == null || calcExecParam.getModifiedDataList().isEmpty()) {
             //缓存中没有数据集的数据时从数据库取出并放入缓存
@@ -647,14 +638,19 @@ public class IndicatorsServiceImpl {
         }
 
         int targetObjLine = 0;
+        // 创建原始数据集二维数组
         Double[][] originDataArr = new Double[taiDataList.size()][taiDataList.getClass().getDeclaredFields().length - 2];
         for (int i = 0; i < taiDataList.size(); i++) {
+            // 从数据集中找到要测算的对象
             if (taiDataList.get(i).getId().equals(calcExecParam.getTargetId())) {
                 targetTaiObj = taiDataList.get(i);
+                // 保存行数
                 targetObjLine = i;
             }
+            // 构造行数据
             Double[] row = {taiDataList.get(i).getPatents(), taiDataList.get(i).getRoyalties(), taiDataList.get(i).getInternet(), taiDataList.get(i).getExports(),
                     taiDataList.get(i).getTelephones(), taiDataList.get(i).getElectricity(), taiDataList.get(i).getSchooling(), taiDataList.get(i).getUniversity()};
+            // 进行数据替换
             originDataArr[i] = row;
         }
 
@@ -705,22 +701,22 @@ public class IndicatorsServiceImpl {
      * @return
      */
     public boolean resetData() {
-        this.graphNodeList = new ArrayList<>();
-        this.graphEdgeList = new ArrayList<>();
-        this.indicatorGraphNodeList = new ArrayList<>();
-        this.indicatorGraphEdgeList = new ArrayList<>();
+        this.graphNodeList.clear();
+        this.graphEdgeList.clear();
+
+        this.indicatorGraphNodeList.clear();
+        this.indicatorGraphEdgeList.clear();
 
         this.currentMaxNodeId = 0L;
-        this.indicatorNodeId = this.currentMaxNodeId;
 
         this.category = 0;
 
-        this.checkExitMap = new HashMap<>();
+        this.checkExitMap.clear();
 
-        this.taiDataList = new ArrayList<>();
+        this.taiDataList.clear();
 
-        this.weightMap = new HashMap<>();
-        this.baseIndicatorValueMap = new HashMap<>();
+        this.weightMap.clear();
+        this.baseIndicatorValueMap.clear();
 
         this.execResult = null;
 
@@ -729,126 +725,5 @@ public class IndicatorsServiceImpl {
         this.ifDataSetModified = true;
         return true;
     }
-
-    /**
-     * 拿到所有节点，并组成成层级结构
-     *
-     * @return
-     */
-    /*@Deprecated
-    public TierGraphDTO getCompIndNodeByTier() {
-        Session session = sessionFactory.openSession();
-        String cypherString = "MATCH (indicators:CompositeIndicators) <-[:CONSTITUTE]- (fl:First_level_Indicator) <-[:CONSTITUTE]- (sl:Second_level_Indicator)\n" +
-                "return indicators,fl,sl";
-
-        //执行查询
-        Result query = session.query(cypherString, Maps.newHashMap());
-
-        //存放从neo4j查询的节点数据，key为节点id，value为节点
-        Map<Long, NodeModel> nodeMap = new HashMap<>();
-        //存放节点与节点之间的关系，key为当前节点id，value为父节点id
-        Map<Long, Long> nodesRelationshipMap = new HashMap<>();
-        //存放节点的类别，key为当前节点id，value为类别数值
-        Map<Long, Long> nodeCategoryMap = new HashMap<>();
-
-        //用lambda表达式需要给变量加final，因此在这里声明一个存放根节点的数组
-        long[] rootNodeId = new long[1];
-        //query数据的总条目是子叶节点的个数，每个条目分别包含着从根节点到子叶节点整条路径的数据
-        query.forEach(record -> {
-            //根据查询语句的变量取出变量所对应的节点数据
-            //根节点
-            NodeModel indicatorNode = (NodeModel) record.get("indicators");
-            //一级节点
-            NodeModel firstLevelNode = (NodeModel) record.get("fl");
-            //二级节点
-            NodeModel secondLevelNode = (NodeModel) record.get("sl");
-            //取出对应的节点id
-            Long indicatorNodeId = indicatorNode.getId();
-            Long firstLevelNodeId = firstLevelNode.getId();
-            Long secondLevelNodeId = secondLevelNode.getId();
-            //将根节点存起来，后续取出返回
-            rootNodeId[0] = indicatorNodeId;
-            //如果节点集合中没有当前节点，则放入
-            //处理根节点
-            if (!nodeMap.containsKey(indicatorNodeId)) {
-                nodeMap.put(indicatorNodeId, indicatorNode);
-                //向类别集合中存放当前节点的类别
-                nodeCategoryMap.put(indicatorNodeId, 0L);
-            }
-            //处理一级节点
-            if (!nodeMap.containsKey(firstLevelNodeId)) {
-                nodeMap.put(firstLevelNodeId, firstLevelNode);
-                //向关系集合中存放当前节点id和父节点的id
-                nodesRelationshipMap.put(firstLevelNodeId, indicatorNodeId);
-                nodeCategoryMap.put(firstLevelNodeId, 1L);
-            }
-            //处理二级节点
-            if (!nodeMap.containsKey(secondLevelNodeId)) {
-                nodeMap.put(secondLevelNodeId, secondLevelNode);
-                nodesRelationshipMap.put(secondLevelNodeId, firstLevelNodeId);
-                nodeCategoryMap.put(secondLevelNodeId, 2L);
-            }
-        });
-
-        //根据id取出Neo4j节点，并将其属性设置到DTO中
-        for (Long nodeId : nodeMap.keySet()) {
-            NodeModel nodeModel = nodeMap.get(nodeId);
-            TierGraphDTO tierGraphDTO = new TierGraphDTO();
-            tierGraphDTO.setId(nodeId);
-            //设置节点名称
-            List<Property<String, Object>> propertyList = nodeModel.getPropertyList();
-            propertyList.forEach(pro -> {
-                if ("name".equals(pro.getKey())) {
-                    tierGraphDTO.setName(pro.getValue().toString());
-                }
-            });
-            //设置节点标签
-            tierGraphDTO.setDes(nodeModel.getLabels()[0]);
-            //设置节点的类别
-            tierGraphDTO.setCategory(nodeCategoryMap.get(nodeId));
-            //设置连线描述
-            tierGraphDTO.setLinkDes("constitute");
-            //将设置好属性的DTO放入DTO集合
-            tierGraphNodeMap.put(nodeId, tierGraphDTO);
-        }
-
-        //设置子节点
-        for (Long nodeId : nodesRelationshipMap.keySet()) {
-            //从关系集合中取出当前节点对应的父节点
-            Long parentId = nodesRelationshipMap.get(nodeId);
-            //根据父节点id取出父节点，并将当前节点添加到父节点的childrenList中
-            tierGraphNodeMap.get(parentId).getChildren().add(tierGraphNodeMap.get(nodeId));
-        }
-
-        //设置子节点数量
-        for (Long nodeId : tierGraphNodeMap.keySet()) {
-            TierGraphDTO tierGraphDTO = tierGraphNodeMap.get(nodeId);
-            tierGraphDTO.setChildNum(tierGraphDTO.getChildren().size());
-        }
-        return tierGraphNodeMap.get(rootNodeId[0]);
-    }*/
-
-    /**
-     * 将计算结果和基础指标数值加入图数据
-     *
-     * @param baseIndicatorDataMap
-     * @param compositeIndicator
-     * @return
-     */
-    /*@Deprecated
-    private TierGraphDTO execIndCalcTierGraph(Map baseIndicatorDataMap, Double compositeIndicator) {
-        for (Long graphNodeId : tierGraphNodeMap.keySet()) {
-            TierGraphDTO tierGraphDTO = tierGraphNodeMap.get(graphNodeId);
-            if (tierGraphDTO.getCategory() == 2) {
-                TierGraphDTO baseIndicatorDataNode = new TierGraphDTO();
-                baseIndicatorDataNode.setName(baseIndicatorDataMap.get(tierGraphDTO.getName().toLowerCase()).toString());
-                tierGraphDTO.getChildren().add(baseIndicatorDataNode);
-            }
-        }
-        TierGraphDTO compIndGraph = new TierGraphDTO();
-        compIndGraph.setName(String.valueOf(compositeIndicator));
-        compIndGraph.getChildren().add(tierGraphNodeMap.get(0L));
-        return compIndGraph;
-    }*/
 
 }

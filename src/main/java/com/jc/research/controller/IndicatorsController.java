@@ -87,9 +87,4 @@ public class IndicatorsController {
 		}
 	}
 
-	@GetMapping("/getSecondNodes")
-	public void getSecondNodesByFirstNodeName() {
-		indicatorsServiceImpl.getSecondNodesByFirstNodeName();
-	}
-
 }

@@ -15,9 +15,9 @@ public class GraphEdge extends Graph {
     /**
      * 起点名称
      */
-    private Long sourceID;
+    private Long sourceId;
     /**
      * 终点名称
      */
-    private Long targetID;
+    private Long targetId;
 }

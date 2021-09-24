@@ -1,18 +1,10 @@
 package com.jc.research.controller;
 
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelReader;
-import com.alibaba.excel.read.metadata.ReadSheet;
-import com.jc.research.entity.TechnologyAchievementIndex;
 import com.jc.research.service.impl.FileServiceImpl;
 import com.jc.research.util.R;
-import com.jc.research.util.excel.TAIListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.ResourceUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import java.io.File;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.io.FileNotFoundException;
 
 @RestController
@@ -22,11 +14,26 @@ public class FileController {
     @Autowired
     private FileServiceImpl fileService;
 
-    @GetMapping("/upload")
-    public R uploadFile() {
-        boolean resolveFlag = false;
+    /**
+     * 解析上传的文件并保存到数据库和minio
+     * @param file
+     * @return
+     */
+    @PostMapping("upload")
+    public R upload(@RequestPart("file") MultipartFile file) {
+        boolean resolveFlag = fileService.resolveUploadExcel(file);
+        if (resolveFlag) {
+            return R.ok(null, "上传并保存成功");
+        } else {
+            return R.failed("上传失败");
+        }
+    }
+
+    @GetMapping("/resolveLocalFile")
+    public R resolveLocalFile() {
+        boolean resolveFlag;
         try {
-            resolveFlag = fileService.readResolveExcel();
+            resolveFlag = fileService.resolveLocalExcel();
         } catch (FileNotFoundException e) {
             return R.failed("解析失败,文件不存在");
         }

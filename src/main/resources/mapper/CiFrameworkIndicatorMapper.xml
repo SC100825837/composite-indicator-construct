@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jc.research.mapper.CiFrameworkIndicatorMapper">
+
+    <resultMap id="ciFrameworkIndicatorMap" type="com.jc.research.entity.CiFrameworkIndicator">
+        <id property="id" column="id"/>
+        <result property="indicatorName" column="indicator_name"/>
+        <result property="indicatorDescription" column="indicator_description"/>
+        <result property="indicatorLevel" column="indicator_level"/>
+        <result property="headFlag" column="head_flag"/>
+        <result property="ciFrameworkObjectId" column="ci_framework_object_id"/>
+    </resultMap>
+
+    <select id="selectExcelHead" resultMap="ciFrameworkIndicatorMap">
+        SELECT indicator_name, indicator_level
+        FROM ci_framework_indicator
+        WHERE ci_framework_object_id = ${ciObjId}
+          AND head_flag = true
+    </select>
+
+    <select id="selectCiIndicatorByCiObjIdAndDepth" resultMap="ciFrameworkIndicatorMap">
+        SELECT id, indicator_name, indicator_level
+        FROM ci_framework_indicator
+        WHERE ci_framework_object_id = ${ciObjId}
+          AND indicator_level = ${depth}
+          AND head_flag = false
+    </select>
+
+    <select id="selectIndicatorByAncestorAndDepth" resultMap="ciFrameworkIndicatorMap">
+        SELECT id, ciin.indicator_name, ciin.indicator_level
+        FROM ci_framework_indicator AS ciin
+                 LEFT JOIN ci_framework_treepath AS cit
+                           ON ciin.id = cit.descendant
+        WHERE cit.ancestor = ${ancestor} AND cit.path_depth = ${pathDepth}
+    </select>
+
+</mapper>
