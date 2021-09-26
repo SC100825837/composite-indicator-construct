@@ -1,14 +1,7 @@
 package com.jc.research.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jc.research.entity.CiConstructTarget;
-import com.jc.research.entity.Country;
-import com.jc.research.mapper.CiConstructTargetMapper;
 import com.jc.research.service.CiConstructTargetService;
-import com.jc.research.service.TAIService;
-import com.jc.research.service.impl.IndicatorsServiceImpl;
 import com.jc.research.util.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

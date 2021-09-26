@@ -9,7 +9,6 @@ import com.jc.research.service.CiFrameworkObjectService;
 import com.jc.research.service.CiFrameworkTreepathService;
 import com.jc.research.service.CiConstructTargetService;
 import com.jc.research.util.excel.NoModelDataListener;
-import com.jc.research.util.excel.TAIListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -219,8 +218,8 @@ public class FileServiceImpl {
 
     /**
      * 读取本地Excel文件并解析数据保存到数据库
-     * <p>1. 创建excel对应的实体对象 参照{@link TechnologyAchievementIndex}
-     * <p>2. 由于默认一行行的读取excel，所以需要创建excel一行一行的回调监听器，参照{@link TAIListener}
+     * <p>1. 创建excel对应的实体对象 参照{@link }
+     * <p>2. 由于默认一行行的读取excel，所以需要创建excel一行一行的回调监听器，参照{@link }
      * <p>3. 直接读即可
      */
     public boolean resolveLocalExcel() throws FileNotFoundException {
@@ -243,7 +242,6 @@ public class FileServiceImpl {
         // 写法1：
         // 这里 需要指定读用哪个class去读，然后读取第一个sheet 文件流会自动关闭
         LOGGER.info("开始读取excel文件，文件路径是：" + filePath.getAbsolutePath());
-        EasyExcel.read(filePath, TechnologyAchievementIndex.class, new TAIListener()).sheet().doRead();
 
         // 写法2：
         /*ExcelReader excelReader = null;

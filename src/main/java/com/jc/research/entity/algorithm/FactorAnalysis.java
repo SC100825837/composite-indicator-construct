@@ -6,8 +6,6 @@ import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.entity.algorithm.result.ProcessResult;
 import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
-import org.springframework.data.annotation.Transient;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -26,7 +24,6 @@ public class FactorAnalysis extends Algorithm {
 
     private String stepName = "weightingAndAggregation";
 
-    @Transient
     private String fullClassName = "";
 
     /*private Map<String, Double> weightMap;

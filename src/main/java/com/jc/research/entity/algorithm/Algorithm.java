@@ -1,7 +1,6 @@
 package com.jc.research.entity.algorithm;
 
 import lombok.*;
-import org.springframework.data.annotation.Transient;
 
 /**
  * @program: composite-indicator-construct
@@ -28,7 +27,6 @@ public class Algorithm {
      */
     private String stepName;
 
-    @Transient
     private String fullClassName;
 
     /**

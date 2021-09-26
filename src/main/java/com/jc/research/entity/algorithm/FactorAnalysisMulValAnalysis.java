@@ -6,7 +6,6 @@ import com.jc.research.util.AlgorithmConstants;
 import com.jc.research.util.AlgorithmUtil;
 import com.jc.research.util.ContainProcessResult;
 import lombok.Data;
-import org.springframework.data.annotation.Transient;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -26,7 +25,6 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
 
     private String stepName = "multivariateAnalysis";
 
-    @Transient
     private String fullClassName = "";
 
     @Override

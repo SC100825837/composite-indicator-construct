@@ -4,15 +4,12 @@ import com.jc.research.entity.DTO.CalcExecParamDTO;
 import com.jc.research.entity.DTO.CalcResultGraphDTO;
 import com.jc.research.entity.DTO.GraphDTO;
 import com.jc.research.entity.DTO.ProcessResultDTO;
-import com.jc.research.entity.TechnologyAchievementIndex;
-import com.jc.research.service.AlgorithmService;
 import com.jc.research.service.impl.IndicatorsServiceImpl;
 import com.jc.research.util.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**

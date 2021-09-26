@@ -10,12 +10,10 @@ import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
 import com.jc.research.entity.algorithm.result.FactorAnalysisPR;
 import com.jc.research.indicatorAl.facade.AlgorithmFacade;
-import com.jc.research.mapper.IndicatorsRepository;
 import com.jc.research.service.*;
 import com.jc.research.util.AlgorithmConstants;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,9 +35,6 @@ public class IndicatorsServiceImpl {
 
     @Autowired
     private AlgorithmService algorithmService;
-
-    @Autowired
-    private TAIService taiService;
 
     @Autowired
     private CiConstructTargetService ciConstructTargetService;
@@ -82,11 +77,6 @@ public class IndicatorsServiceImpl {
      * 校验集合，创建节点时判断该节点或连线是否已创建
      */
     private Map<Object, String> checkExitMap = new HashMap<>();
-
-    /**
-     * 科技成就指数数据缓存
-     */
-    private List<TechnologyAchievementIndex> taiDataList = new ArrayList<>();
 
     /**
      * 数据库查询的构建对象缓存
