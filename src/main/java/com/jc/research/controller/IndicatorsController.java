@@ -8,6 +8,7 @@ import com.jc.research.entity.TechnologyAchievementIndex;
 import com.jc.research.service.AlgorithmService;
 import com.jc.research.service.impl.IndicatorsServiceImpl;
 import com.jc.research.util.R;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
  * @author: SunChao
  * @create: 2021-06-23 15:53
  **/
+@Slf4j
 @RestController
 @RequestMapping("/indicator")
 public class IndicatorsController {
@@ -27,12 +29,9 @@ public class IndicatorsController {
 	@Autowired
 	private IndicatorsServiceImpl indicatorsServiceImpl;
 
-	@Autowired
-	private AlgorithmService algorithmService;
-
-	@GetMapping("/getBaseGraph")
-	public R getBaseGraph() {
-		GraphDTO baseGraph = indicatorsServiceImpl.getBaseGraph();
+	@GetMapping("/getBaseGraph/{ciFrameworkObjectId}")
+	public R getBaseGraph(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		GraphDTO baseGraph = indicatorsServiceImpl.getBaseGraph(ciFrameworkObjectId);
 		if (baseGraph == null) {
 			return R.failed("数据为空");
 		}
@@ -45,6 +44,7 @@ public class IndicatorsController {
 		try {
 			calcResultGraphDTO = indicatorsServiceImpl.calcHandler(calcExecParam);
 		} catch (Exception e) {
+			log.error(e.getMessage(), e);
 			return R.failed(e.getMessage());
 		}
 		if (calcResultGraphDTO == null) {
@@ -59,18 +59,18 @@ public class IndicatorsController {
 		return R.ok(mdComposite, "计算完成");
 	}
 
-	@GetMapping("/getOriginDataList")
-	public R<List<TechnologyAchievementIndex>> getOriginDataList() {
-		List<TechnologyAchievementIndex> originDataList = indicatorsServiceImpl.getOriginDataList();
-		if (originDataList == null || originDataList.isEmpty()) {
+	/*@GetMapping("/getOriginDataList/{targetId}")
+	public R<Double[][]> getOriginDataList(@PathVariable("targetId") Long targetId) {
+		Double[][] originDataArray = indicatorsServiceImpl.getOriginDataArray(targetId);
+		if (originDataArray == null || originDataArray.length == 0) {
 			return R.failed("数据为空");
 		}
-		return R.ok(originDataList);
-	}
+		return R.ok(originDataArray);
+	}*/
 
-	@GetMapping("/getProcessResult")
-	public R<ProcessResultDTO> getProcessResult() {
-		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData();
+	@GetMapping("/getProcessResult/{ciFrameworkObjectId}")
+	public R<ProcessResultDTO> getProcessResult(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData(ciFrameworkObjectId);
 		if (processData == null) {
 			return R.failed("数据为空");
 		}

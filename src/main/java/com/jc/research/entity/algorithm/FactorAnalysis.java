@@ -38,8 +38,9 @@ public class FactorAnalysis extends Algorithm {
     @Override
     public ProcessResult exec(Double[][] matrix) {
         String doublesStr = Arrays.deepToString(matrix);
+        String columnCounts = String.valueOf(matrix[0].length);
 
-        String[] pyArgs = {AlgorithmUtil.getPythonEnvPath(), AlgorithmUtil.getPythonAlgorithmPath() + "FactorAnalysis.py", doublesStr};
+        String[] pyArgs = {AlgorithmUtil.getPythonEnvPath(), AlgorithmUtil.getPythonAlgorithmPath() + "FactorAnalysis.py", doublesStr, columnCounts};
         String calcResultLine = "";
         StringBuilder copyResultStr = new StringBuilder();
         FactorAnalysisPR factorAnalysisPR = new FactorAnalysisPR();
@@ -59,6 +60,9 @@ public class FactorAnalysis extends Algorithm {
             e.printStackTrace();
         }
         String[] resultStrArr = normalizeStrAndToArr(copyResultStr.toString());
+        if (resultStrArr == null) {
+            return factorAnalysisPR;
+        }
         //设置旋转因子载荷矩阵
         factorAnalysisPR.setRotatedFactorLoadingsMatrix(AlgorithmUtil.toDoubleArray(resultStrArr[0]));
         //设置平方因子负荷矩阵
@@ -109,6 +113,9 @@ public class FactorAnalysis extends Algorithm {
      * @return
      */
     private String[] normalizeStrAndToArr(String originStr) {
+        if ("".equals(originStr)) {
+            return null;
+        }
         String[] split = originStr.replaceAll("\\s+", "").split("]],");
         split[0] = split[0].substring(1) + "]]";
         split[1] += "]]";

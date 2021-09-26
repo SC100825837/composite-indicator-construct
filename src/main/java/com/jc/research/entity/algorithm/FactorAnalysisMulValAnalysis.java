@@ -32,8 +32,8 @@ public class FactorAnalysisMulValAnalysis extends Algorithm {
     @Override
     public ProcessResult exec(Double[][] matrix) {
         String doublesStr = Arrays.deepToString(matrix);
-
-        String[] pyArgs = {AlgorithmUtil.getPythonEnvPath(), AlgorithmUtil.getPythonAlgorithmPath() + "FactorAnalysisMulValAnalysis.py", doublesStr};
+        String columnCounts = String.valueOf(matrix[0].length);
+        String[] pyArgs = {AlgorithmUtil.getPythonEnvPath(), AlgorithmUtil.getPythonAlgorithmPath() + "FactorAnalysisMulValAnalysis.py", doublesStr, columnCounts};
         String calcResultLine = "";
         StringBuilder copyResultStr = new StringBuilder();
         try {

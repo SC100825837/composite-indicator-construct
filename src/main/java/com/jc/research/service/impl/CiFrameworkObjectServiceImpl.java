@@ -1,5 +1,6 @@
 package com.jc.research.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jc.research.entity.CiFrameworkIndicator;
 import com.jc.research.entity.CiFrameworkObject;
@@ -41,6 +42,17 @@ public class CiFrameworkObjectServiceImpl extends ServiceImpl<CiFrameworkObjectM
         currentDepth = 0;
         getCell(cellList, 1, excelHeadList.size(), excelDataList);
         return excelDataList;
+    }
+
+    @Override
+    public Long getRecentlyCiFrameworkObjectId() {
+        CiFrameworkObject ciFrameworkObject = this.getOne(new QueryWrapper<CiFrameworkObject>()
+                .orderByDesc("id")
+                .last("limit 1"));
+        if (ciFrameworkObject != null) {
+            return ciFrameworkObject.getId();
+        }
+        return null;
     }
 
     private List<Map<Integer, String>> getCell(List<CiFrameworkIndicator> cellList, Integer pathDepth, Integer maxDepth, List<Map<Integer, String>> excelDataList) {

@@ -2,11 +2,13 @@ package com.jc.research.controller;
 
 import com.jc.research.service.impl.FileServiceImpl;
 import com.jc.research.util.R;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.FileNotFoundException;
 
+@Slf4j
 @RestController
 @RequestMapping("/file")
 public class FileController {
@@ -21,7 +23,13 @@ public class FileController {
      */
     @PostMapping("upload")
     public R upload(@RequestPart("file") MultipartFile file) {
-        boolean resolveFlag = fileService.resolveUploadExcel(file);
+        boolean resolveFlag = false;
+        try {
+            resolveFlag = fileService.resolveUploadExcel(file);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return R.failed(e.getMessage());
+        }
         if (resolveFlag) {
             return R.ok(null, "上传并保存成功");
         } else {

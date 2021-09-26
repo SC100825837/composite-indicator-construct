@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CiFrameworkIndicator {
+public class CiFrameworkIndicator implements Comparable<CiFrameworkIndicator> {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -39,4 +40,8 @@ public class CiFrameworkIndicator {
      */
     private Long ciFrameworkObjectId;
 
+    @Override
+    public int compareTo(@NotNull CiFrameworkIndicator o) {
+        return this.getId().compareTo(o.getId());
+    }
 }

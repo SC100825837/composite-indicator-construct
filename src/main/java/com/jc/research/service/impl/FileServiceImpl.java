@@ -21,10 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FileServiceImpl {
@@ -49,7 +46,7 @@ public class FileServiceImpl {
      * @return
      */
     @Transactional
-    public boolean resolveUploadExcel(MultipartFile file) {
+    public boolean resolveUploadExcel(MultipartFile file) throws Exception {
         List<Map<Integer, String>> excelDataList = new ArrayList<Map<Integer, String>>();
         try {
             //解析excel
@@ -68,7 +65,7 @@ public class FileServiceImpl {
      * @param file
      * @param excelDataList
      */
-    private void saveExcelDataToDB(MultipartFile file, List<Map<Integer, String>> excelDataList) {
+    private void saveExcelDataToDB(MultipartFile file, List<Map<Integer, String>> excelDataList) throws Exception {
         //保存架构对象
         CiFrameworkObject ciFrameworkObject = new CiFrameworkObject(null, file.getOriginalFilename(), excelDataList.get(0).keySet().size(), null, null, LocalDateTime.now(), null);
         ciFrameworkObjectService.save(ciFrameworkObject);
@@ -85,7 +82,7 @@ public class FileServiceImpl {
         // 存储数据列的集合
         List<CiConstructTarget> constructTargetList = new ArrayList<>(excelDataList.size());
         // 存放数据，最后会转成json存到CiConstructTarget的data属性中
-        Map<Integer, Map<Long, String>> dataColumnMap = new HashMap<>();
+        Map<Integer, String[]> dataColumnMap = new HashMap<>();
         // 在读取每一行数据的时候，用来判断是否读到数据列的单元格
         int ifDataIndex = -1;
         //保存架构指标单元格数据以及树形层级关系
@@ -104,8 +101,9 @@ public class FileServiceImpl {
                             ifDataIndex = col;
                         }
                         CiConstructTarget ciConstructTarget = new CiConstructTarget();
-                        ciConstructTarget.setTargetName(cell);
+                        ciConstructTarget.setTargetName(cell.replace("#", ""));
                         ciConstructTarget.setBelongColumnIndex(col);
+                        ciConstructTarget.setCiFrameworkObjectId(ciFrameworkObject.getId());
                         constructTargetList.add(ciConstructTarget);
                     }
                     CiFrameworkIndicator ciFrameworkIndicator = new CiFrameworkIndicator();
@@ -142,17 +140,28 @@ public class FileServiceImpl {
                 // 判断该单元格是否属于数据列
                 if (col >= ifDataIndex) {
                     for (CiConstructTarget ciConstructTarget : constructTargetList) {
-                        // 取出单元格节点id
-                        Long indicatorId = ciFrameworkIndicator.getId();
                         // 取出构建对象所属的列，也就是数据列的下标
                         Integer belongColumnIndex = ciConstructTarget.getBelongColumnIndex();
-
                         // 数据对象所属列和当前单元格所属的列相同时才保存数据
                         if (belongColumnIndex.equals(col)) {
-                            // 如果没有以下标为key的map  则创建一个新的map
-                            dataColumnMap.computeIfAbsent(belongColumnIndex, key -> new HashMap<>());
-                            // 拿出map并放入单元格数据
-                            dataColumnMap.get(belongColumnIndex).put(indicatorId, cell);
+                            // 设置数组长度时 -1 是因为excelDataList中含有表头
+                            String[] oneDataArr = dataColumnMap.computeIfAbsent(belongColumnIndex, k -> new String[excelDataList.size() - 1]);
+
+                            Double cellData = 0D;
+                            if (cell.contains("%")) {
+                                String cellDataStr = cell.replaceAll("%", "");
+                                try {
+                                    cellData = Double.valueOf(cellDataStr);
+                                    // 减一时因为表头那一行已经跳过，此时的i是从1开始的
+                                    oneDataArr[i - 1] = String.valueOf(cellData / 100D);
+                                } catch (NumberFormatException e) {
+                                    LOGGER.error(e.getMessage(), e);
+                                    throw new Exception("第" + i + "行，第" + col + "列单元格数据无法识别为数字，请重新编辑");
+                                }
+                            } else {
+                                // 减一时因为表头那一行已经跳过，此时的i是从1开始的
+                                oneDataArr[i - 1] = cell;
+                            }
                         }
                     }
                 }

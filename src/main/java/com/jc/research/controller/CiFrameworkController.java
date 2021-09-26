@@ -27,7 +27,7 @@ import java.util.Map;
  * @create: 2021-06-23 15:53
  **/
 @RestController
-@RequestMapping("/indicator")
+@RequestMapping("/CiFrameworkObject")
 public class CiFrameworkController {
 
 	@Autowired
@@ -59,5 +59,11 @@ public class CiFrameworkController {
 	public R previewExcelContent(@PathVariable("ciObjId") Long ciObjId, @PathVariable("maxDepth") Integer maxDepth) {
 		List<Map<Integer, String>> excelContent = ciFrameworkObjectService.previewExcelContent(ciObjId, maxDepth);
 		return R.ok(excelContent);
+	}
+
+	@GetMapping("getRecentlyId")
+	public R getRecentlyCiFrameworkObjectId() {
+		Long recentlyCiFrameworkObjectId = ciFrameworkObjectService.getRecentlyCiFrameworkObjectId();
+		return R.ok(recentlyCiFrameworkObjectId);
 	}
 }

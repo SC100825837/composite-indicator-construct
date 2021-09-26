@@ -1,11 +1,13 @@
 package com.jc.research.entity.DTO;
 
-import com.jc.research.entity.TechnologyAchievementIndex;
-import lombok.AllArgsConstructor;
+import com.jc.research.entity.CiConstructTarget;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.io.Serializable;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @program: composite-indicator-construct
@@ -21,5 +23,8 @@ public class CalcExecParamDTO implements Serializable {
 
     private Long targetId;
 
-    private List<TechnologyAchievementIndex> modifiedDataList;
+    private Double[][] modifiedDataList;
+
+    private Long ciFrameworkObjectId;
+
 }

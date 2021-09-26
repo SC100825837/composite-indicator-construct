@@ -2,6 +2,7 @@ package com.jc.research.util;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.Properties;
  * @author: SunChao
  * @create: 2021-08-23 14:32
  **/
+@Slf4j
 public class AlgorithmUtil {
 
     /**
@@ -21,7 +23,9 @@ public class AlgorithmUtil {
      * @return
      */
     public static String getPythonEnvPath() {
-        return PropertiesUtil.getProperties("application.properties").getProperty("python.env.path");
+        String pythonEnvPath = PropertiesUtil.getProperties("application.properties").getProperty("python.env.path");
+        log.info("加载的Python环境路径为： " + pythonEnvPath);
+        return pythonEnvPath;
     }
 
     /**
@@ -29,7 +33,9 @@ public class AlgorithmUtil {
      * @return
      */
     public static String getPythonAlgorithmPath() {
-        return PropertiesUtil.getProperties("application.properties").getProperty("python.algorithm.path");
+        String pythonAlPath = PropertiesUtil.getProperties("application.properties").getProperty("python.algorithm.path");
+        log.info("加载的Python算法路径为： " + pythonAlPath);
+        return pythonAlPath;
     }
 
     /**
@@ -39,13 +45,13 @@ public class AlgorithmUtil {
      */
     public static Double[][] toDoubleArray(String str) {
         if (str == null || str.equals("")) {
-            return new Double[1][1];
+            return null;
         }
         String[][] strings = JSON.parseObject(str, String[][].class);
         Double[][] Doubles = new Double[strings.length][strings[0].length];
         for (int i = 0; i < strings.length; i++) {
             for (int j = 0; j < strings[i].length; j++) {
-                Doubles[i][j] = Double.parseDouble(strings[i][j]);
+                Doubles[i][j] = handleFractional(2, Double.parseDouble(strings[i][j]));
             }
         }
         return Doubles;
@@ -138,7 +144,7 @@ public class AlgorithmUtil {
     public static Double handleFractional(int digit, Double origin) {
         NumberFormat numberInstance = NumberFormat.getNumberInstance();
         numberInstance.setMaximumFractionDigits(digit);
-        return Double.parseDouble(numberInstance.format(origin));
+        return Double.parseDouble(numberInstance.format(origin).replaceAll(",", ""));
     }
 
 }
