@@ -322,7 +322,6 @@ public class IndicatorsServiceImpl {
             //通过算法门面执行算法计算
             this.execResult = AlgorithmFacade.calculate(algorithmMap, this.originDataArray);
         }
-        weightMap = new HashMap<>();
 
         //缺失值插补的结果
         Double[][] missDataImputationArr = execResult.getMissDataImputation();
@@ -335,17 +334,14 @@ public class IndicatorsServiceImpl {
         //初始化综合指标
         double compositeIndicator = 0;
         //计算综合指标数值
-        for (Double indicatorData : targetLineData) {
-            for (Double weight : baseIndicatorWeight) {
-                compositeIndicator += indicatorData * weight;
-            }
+        for (int i = 0; i < targetLineData.length; i++) {
+            compositeIndicator += targetLineData[i] * baseIndicatorWeight[i];
         }
         //处理小数点位数
         compositeIndicator = handleFractional(2, compositeIndicator);
 
         // 基础指标节点所在的列
         int baseIndicatorNodeColumn = 0;
-        // TODO 构建对象的id
         CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
         if (ciFrameworkObject != null) {
             // 基础指标节点所在的列 和 数据列 相邻
@@ -362,14 +358,11 @@ public class IndicatorsServiceImpl {
         // key是节点id， value是节点的基础数据值（经过缺失值插补计算的）
         Map<Long, Double> targetDataMap = new HashMap<>(baseIndicatorList.size());
         Map<Long, Double> weightMap = new HashMap<>(baseIndicatorList.size());
-        for (CiFrameworkIndicator baseIndicator : baseIndicatorList) {
-            for (Double cellData : targetLineData) {
-                targetDataMap.put(baseIndicator.getId(), cellData);
-                this.baseIndicatorName.add(baseIndicator.getIndicatorName());
-            }
-            for (Double weight : baseIndicatorWeight) {
-                weightMap.put(baseIndicator.getId(), weight);
-            }
+        this.baseIndicatorName.clear();
+        for (int i = 0; i < baseIndicatorList.size(); i++) {
+            this.baseIndicatorName.add(baseIndicatorList.get(i).getIndicatorName());
+            targetDataMap.put(baseIndicatorList.get(i).getId(), targetLineData[i]);
+            weightMap.put(baseIndicatorList.get(i).getId(), baseIndicatorWeight[i]);
         }
         //构建带有指标值的图数据
         constructIndicatorGraph(compositeIndicator, targetId, baseIndicatorNodeColumn, targetDataMap, weightMap);
@@ -500,7 +493,6 @@ public class IndicatorsServiceImpl {
 
     /**
      * 拿到计算过程数据,封装对象并返回
-     *
      */
     private ProcessResultDTO createWebDTO(Long ciFrameworkObjectId) {
         //创建过程结果前端封装对象
@@ -510,17 +502,13 @@ public class IndicatorsServiceImpl {
         List<CiConstructTarget> targetNameList = ciConstructTargetService.list(new QueryWrapper<CiConstructTarget>()
                 .select("target_name")
                 .eq("ci_framework_object_id", ciFrameworkObjectId));
-        List<String> originDataList = new ArrayList<>();
-        for (int i = 0; i <= this.originDataArray.length; i++) {
-            if (i == 0) {
-                originDataList.add("名称");
-                originDataList.add(this.baseIndicatorName.get(i));
-                continue;
+        List<Map<String, Double>> originDataList = new ArrayList<>();
+        for (int i = 0; i < this.originDataArray.length; i++) {
+            Map<String, Double> row = new LinkedHashMap<>();
+            for (int j = 0; j < this.originDataArray[i].length; j++) {
+                row.put(this.baseIndicatorName.get(j), this.originDataArray[i][j]);
             }
-            originDataList.add(targetNameList.get(i - 1).getTargetName());
-            for (int j = 0; j < this.originDataArray[i - 1].length; j++) {
-                originDataList.add(String.valueOf(this.originDataArray[i - 1][j]));
-            }
+            originDataList.add(row);
         }
         processResultDTO.getOriginalData().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.ORIGIN_DATA_SET_NAME_ZH);
         processResultDTO.getOriginalData().put("isContainPR", false);
@@ -528,18 +516,14 @@ public class IndicatorsServiceImpl {
 
         //缺失值插补
         Double[][] missDataImputationArr = this.execResult.getMissDataImputation();
-        List<String> missDataImputationList = new ArrayList<>();
         //创建新的集合，用来存储缺失值插补算法返回的数据
-        for (int i = 0; i <= missDataImputationArr.length; i++) {
-            if (i == 0) {
-                missDataImputationList.add("名称");
-                missDataImputationList.add(this.baseIndicatorName.get(i));
-                continue;
+        List<Map<String, Double>> missDataImputationList = new ArrayList<>();
+        for (int i = 0; i < missDataImputationArr.length; i++) {
+            Map<String, Double> row = new LinkedHashMap<>();
+            for (int j = 0; j < missDataImputationArr[i].length; j++) {
+                row.put(this.baseIndicatorName.get(j), missDataImputationArr[i][j]);
             }
-            missDataImputationList.add(targetNameList.get(i - 1).getTargetName());
-            for (int j = 0; j < missDataImputationArr[i - 1].length; j++) {
-                missDataImputationList.add(String.valueOf(missDataImputationArr[i - 1][j]));
-            }
+            missDataImputationList.add(row);
         }
         processResultDTO.getMissDataImputation().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.MISS_DATA_IMPUTATION_NAME_ZH);
         processResultDTO.getMissDataImputation().put("isContainPR", false);
@@ -552,9 +536,7 @@ public class IndicatorsServiceImpl {
         Double[][] correlationMatrix = multivariateAnalysisPR.getCorrelationMatrix();
         //创建矩阵图数据对象
         CoordinateDTO correlationMatrixCoordinate = new CoordinateDTO();
-        List<String> axisData = targetNameList.stream()
-                .map(CiConstructTarget::getTargetName)
-                .collect(Collectors.toList());
+        List<String> axisData = this.baseIndicatorName;
         //设置x轴
         correlationMatrixCoordinate.setXAxis(axisData);
         //设置y轴
@@ -582,18 +564,13 @@ public class IndicatorsServiceImpl {
         //标准化
         Double[][] normalisationArr = this.execResult.getNormalisation();
         //创建新的集合，用来存储标准化算法返回的数据
-        List<String> normalisationList = new ArrayList<>();
-        //创建新的集合，用来存储缺失值插补算法返回的数据
-        for (int i = 0; i <= normalisationArr.length; i++) {
-            if (i == 0) {
-                missDataImputationList.add("名称");
-                missDataImputationList.add(this.baseIndicatorName.get(i));
-                continue;
+        List<Map<String, Double>> normalisationList = new ArrayList<>();
+        for (int i = 0; i < normalisationArr.length; i++) {
+            Map<String, Double> row = new LinkedHashMap<>();
+            for (int j = 0; j < normalisationArr[i].length; j++) {
+                row.put(this.baseIndicatorName.get(j), normalisationArr[i][j]);
             }
-            missDataImputationList.add(targetNameList.get(i - 1).getTargetName());
-            for (int j = 0; j < normalisationArr[i - 1].length; j++) {
-                missDataImputationList.add(String.valueOf(normalisationArr[i - 1][j]));
-            }
+            normalisationList.add(row);
         }
         processResultDTO.getNormalisation().put(AlgorithmConstants.FIRST_LEVEL_TITLE, AlgorithmConstants.NORMALISATION_NAME_ZH);
         processResultDTO.getNormalisation().put("isContainPR", false);
@@ -608,7 +585,7 @@ public class IndicatorsServiceImpl {
         //创建矩阵图数据对象
         CoordinateDTO rotatedFactorLoadingsMatrixCoordinate = new CoordinateDTO();
         //设置x轴
-        rotatedFactorLoadingsMatrixCoordinate.setXAxis(Arrays.asList("因子1", "因子2", "因子3", "因子4", "因子5", "因子6", "因子7", "因子8", "因子9", "因子10"));
+        rotatedFactorLoadingsMatrixCoordinate.setXAxis(Arrays.asList("因子1", "因子2", "因子3", "因子4"));
         //设置y轴
         rotatedFactorLoadingsMatrixCoordinate.setYAxis(axisData);
         //设置数据
@@ -650,7 +627,7 @@ public class IndicatorsServiceImpl {
         }
         eigenvalueCoordinate.setData(eigenvalueData);
         //设置颜色上下限的值
-        eigenvalueCoordinate.setMinValue(0);
+        eigenvalueCoordinate.setMinValue(-1);
         eigenvalueCoordinate.setMaxValue(100);
         eigenvalueCoordinate.setTitle("特征值");
         weightingAndAggregationResultMap.put("eigenvalues", eigenvalueCoordinate);
@@ -729,7 +706,6 @@ public class IndicatorsServiceImpl {
         this.targetObjLine = 0;
 
         this.baseIndicatorName = new ArrayList<>();
-
         this.weightMap.clear();
         this.baseIndicatorValueMap.clear();
 

@@ -5,6 +5,7 @@ import com.jc.research.service.CiConstructTargetService;
 import com.jc.research.util.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,9 +25,9 @@ public class CiConstructTargetController {
     @Autowired
     private CiConstructTargetService ciConstructTargetService;
 
-    @GetMapping("/getAllCiConstructTargets")
-    public R<List<CiConstructTarget>> getAllCiConstructTargets() {
-        return R.ok(ciConstructTargetService.list());
+    @GetMapping("/getAllCiConstructTargets/{ciFrameworkObjectId}")
+    public R<List<CiConstructTarget>> getAllCiConstructTargets(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+        return R.ok(ciConstructTargetService.getAllTargetsByFrameworkId(ciFrameworkObjectId));
     }
 
 }

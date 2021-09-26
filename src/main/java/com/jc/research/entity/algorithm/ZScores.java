@@ -1,6 +1,7 @@
 package com.jc.research.entity.algorithm;
 
 import com.jc.research.util.AlgorithmConstants;
+import com.jc.research.util.AlgorithmUtil;
 import lombok.Data;
 import static com.jc.research.util.AlgorithmUtil.*;
 
@@ -28,7 +29,7 @@ public class ZScores extends Algorithm {
             Double standardDeviation = getStandardDeviation(getVariance(transposeMatrix[i], average, transposeMatrix[i].length));
             for (int j = 0; j < transposeMatrix[i].length; j++) {
                 Double standardisation = (transposeMatrix[i][j] - average) / standardDeviation;
-                normalizationMatrix[i][j] = standardisation;
+                normalizationMatrix[i][j] = AlgorithmUtil.handleFractional(3, standardisation);
             }
         }
         return transposeMatrix(normalizationMatrix);

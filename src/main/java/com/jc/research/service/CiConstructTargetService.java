@@ -3,6 +3,8 @@ package com.jc.research.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jc.research.entity.CiConstructTarget;
 
+import java.util.List;
+
 /**
  * @program: composite-indicator-construct
  * @description:
@@ -11,4 +13,5 @@ import com.jc.research.entity.CiConstructTarget;
  **/
 public interface CiConstructTargetService extends IService<CiConstructTarget> {
 
+    List<CiConstructTarget> getAllTargetsByFrameworkId(Long frameworkId);
 }
