@@ -9,6 +9,7 @@ import com.jc.research.mapper.CiFrameworkObjectMapper;
 import com.jc.research.service.CiFrameworkObjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +54,17 @@ public class CiFrameworkObjectServiceImpl extends ServiceImpl<CiFrameworkObjectM
             return ciFrameworkObject.getId();
         }
         return null;
+    }
+
+    @Override
+    public void getCiFrameworkObjectCalcInfo(Long ciFrameworkObjectId) {
+
+    }
+
+    @Override
+    @Transactional
+    public int deleteCiFrameworkObjectById(Long ciFrameworkObjectId) {
+        return ciFrameworkObjectMapper.deleteCiFrameworkObjectById(ciFrameworkObjectId);
     }
 
     private List<Map<Integer, String>> getCell(List<CiFrameworkIndicator> cellList, Integer pathDepth, Integer maxDepth, List<Map<Integer, String>> excelDataList) {

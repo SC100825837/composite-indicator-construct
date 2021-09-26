@@ -14,4 +14,14 @@
         VALUES (#{framework_object_name});
     </insert>-->
 
+    <delete id="deleteCiFrameworkObjectById">
+        DELETE c1, c2, c3, c4 FROM ci_framework_object AS c1
+        LEFT JOIN ci_framework_indicator AS c2
+        ON c1.id = c2.ci_framework_object_id
+        LEFT JOIN ci_framework_treepath AS c3
+        ON c1.id = c3.ci_framework_object_id
+        LEFT JOIN ci_construct_target AS c4
+        ON c1.id = c4.ci_framework_object_id
+        WHERE c1.id = ${ciFrameworkObjectId}
+    </delete>
 </mapper>

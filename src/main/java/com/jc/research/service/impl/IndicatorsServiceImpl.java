@@ -16,10 +16,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import static com.jc.research.util.AlgorithmUtil.*;
-
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,6 +105,11 @@ public class IndicatorsServiceImpl {
     private AlgorithmExecResult execResult;
 
     /**
+     * 所有构建对象的综合指标值缓存
+     */
+    private Map<Long, Double> targetsCompositeIndicatorMap = new HashMap<>();
+
+    /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
      */
     private Long constructObjId = 0L;
@@ -115,7 +117,7 @@ public class IndicatorsServiceImpl {
     /**
      * 判断数据集是否修改
      */
-    private boolean ifDataSetModified = true;
+    private boolean ifDataSetModified = false;
 
     /**
      * 获取基础的图数据模型
@@ -318,43 +320,41 @@ public class IndicatorsServiceImpl {
      */
     public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long ciFrameworkObjectId) throws Exception {
         //判断数据集是否修改,没修改直接用缓存数据，修改了就重新计算
-        if (ifDataSetModified) {
+        if (this.execResult == null || ifDataSetModified) {
+            this.targetsCompositeIndicatorMap.clear();
             //通过算法门面执行算法计算
             this.execResult = AlgorithmFacade.calculate(algorithmMap, this.originDataArray);
         }
 
         //缺失值插补的结果
         Double[][] missDataImputationArr = execResult.getMissDataImputation();
-        // 找到缺失值插补计算之后的构建对象数据
-        Double[] targetLineData = missDataImputationArr[this.targetObjLine];
 
         //得到权重计算的最终结果，即权重值数组
         Double[] baseIndicatorWeight = execResult.getWeightingAndAggregation().getFinalResult()[0];
 
         //初始化综合指标
         double compositeIndicator = 0;
-        //计算综合指标数值
+        if (this.targetsCompositeIndicatorMap.isEmpty()) {
+            //计算所有构建对象的综合指标值
+            calcAllConstructTarget(missDataImputationArr, baseIndicatorWeight);
+        }
+
+        compositeIndicator = this.targetsCompositeIndicatorMap.get(targetId);
+        /*//计算综合指标数值
         for (int i = 0; i < targetLineData.length; i++) {
             compositeIndicator += targetLineData[i] * baseIndicatorWeight[i];
         }
         //处理小数点位数
-        compositeIndicator = handleFractional(2, compositeIndicator);
+        compositeIndicator = handleFractional(2, compositeIndicator);*/
 
-        // 基础指标节点所在的列
-        int baseIndicatorNodeColumn = 0;
-        CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
-        if (ciFrameworkObject != null) {
-            // 基础指标节点所在的列 和 数据列 相邻
-            baseIndicatorNodeColumn = ciFrameworkObject.getDataFirstColumn() - 1;
-        }
-        // 虽然理论上插入数据库是按照excel顺序来插入的，但是稳妥起见还是排个序
-        List<CiFrameworkIndicator> baseIndicatorList = ciFrameworkIndicatorService.list(new QueryWrapper<CiFrameworkIndicator>()
-                .eq("ci_framework_object_id", ciFrameworkObjectId)
-                .eq("indicator_level", baseIndicatorNodeColumn).eq("head_flag", 0))
-                .stream()
-                .sorted(Comparator.comparingLong(CiFrameworkIndicator::getId))
-                .collect(Collectors.toList());
+        // 获取基础指标所在的excel列
+        int baseIndicatorNodeColumn = getBaseIndicatorNodeColumn(ciFrameworkObjectId);
+        // 按顺序获取所有基础指标集合
+        List<CiFrameworkIndicator> baseIndicatorList = getBaseIndicatorList(ciFrameworkObjectId, baseIndicatorNodeColumn);
 
+
+        // 找到缺失值插补计算之后的构建对象数据
+        Double[] targetLineData = missDataImputationArr[this.targetObjLine];
         // key是节点id， value是节点的基础数据值（经过缺失值插补计算的）
         Map<Long, Double> targetDataMap = new HashMap<>(baseIndicatorList.size());
         Map<Long, Double> weightMap = new HashMap<>(baseIndicatorList.size());
@@ -372,9 +372,56 @@ public class IndicatorsServiceImpl {
         calcResultGraphDTO.setCompositeIndicator(compositeIndicator);
         calcResultGraphDTO.getCompIndGraphNode().addAll(indicatorGraphNodeList);
         calcResultGraphDTO.getCompIndGraphEdge().addAll(indicatorGraphEdgeList);
-
         return calcResultGraphDTO;
+    }
 
+    /**
+     * 计算所有构建对象的综合指标值
+     * @param missDataImputationArr
+     * @param baseIndicatorWeight
+     */
+    private void calcAllConstructTarget(Double[][] missDataImputationArr, Double[] baseIndicatorWeight) {
+        if (!this.targetsCompositeIndicatorMap.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < this.ciConstructTargetList.size(); i++) {
+            double oneCompositeIndicator = 0D;
+            for (int j = 0; j < baseIndicatorWeight.length; j++) {
+                oneCompositeIndicator += missDataImputationArr[i][j] * baseIndicatorWeight[j];
+            }
+            this.targetsCompositeIndicatorMap.put(this.ciConstructTargetList.get(i).getId(), handleFractional(2, oneCompositeIndicator));
+        }
+    }
+
+    /**
+     * 按顺序获取所有基础指标集合
+     * @param ciFrameworkObjectId
+     * @return
+     */
+    private List<CiFrameworkIndicator> getBaseIndicatorList(Long ciFrameworkObjectId, int baseIndicatorNodeColumn) {
+        // 虽然理论上插入数据库是按照excel顺序来插入的，但是稳妥起见还是排个序
+        return ciFrameworkIndicatorService.list(new QueryWrapper<CiFrameworkIndicator>()
+                .eq("ci_framework_object_id", ciFrameworkObjectId)
+                .eq("indicator_level", baseIndicatorNodeColumn).eq("head_flag", 0))
+                .stream()
+                .sorted(Comparator.comparingLong(CiFrameworkIndicator::getId))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取基础指标所在的excel列
+     * @param ciFrameworkObjectId
+     * @return
+     */
+    private int getBaseIndicatorNodeColumn(Long ciFrameworkObjectId) {
+        // 基础指标节点所在的列
+        int baseIndicatorNodeColumn = 0;
+        CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
+        if (ciFrameworkObject != null) {
+            // 基础指标节点所在的列 和 数据列 相邻
+            baseIndicatorNodeColumn = ciFrameworkObject.getDataFirstColumn() - 1;
+        }
+        return baseIndicatorNodeColumn;
     }
 
     /**
@@ -710,7 +757,7 @@ public class IndicatorsServiceImpl {
         this.baseIndicatorValueMap.clear();
 
         this.execResult = null;
-
+        this.targetsCompositeIndicatorMap.clear();
         this.constructObjId = 0L;
 
         this.ifDataSetModified = true;

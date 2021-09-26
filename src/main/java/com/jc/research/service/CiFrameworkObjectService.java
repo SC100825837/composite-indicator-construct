@@ -17,4 +17,8 @@ public interface CiFrameworkObjectService extends IService<CiFrameworkObject> {
     List<Map<Integer, String>> previewExcelContent(Long ciObjId, Integer maxDepth);
 
     Long getRecentlyCiFrameworkObjectId();
+
+    void getCiFrameworkObjectCalcInfo(Long ciFrameworkObjectId);
+
+    int deleteCiFrameworkObjectById(Long ciFrameworkObjectId);
 }

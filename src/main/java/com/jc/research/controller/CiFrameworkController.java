@@ -6,9 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jc.research.entity.CiFrameworkObject;
 import com.jc.research.service.CiFrameworkObjectService;
 import com.jc.research.util.R;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -18,8 +21,9 @@ import java.util.Map;
  * @author: SunChao
  * @create: 2021-06-23 15:53
  **/
+@Slf4j
 @RestController
-@RequestMapping("/CiFrameworkObject")
+@RequestMapping("/ciFrameworkObject")
 public class CiFrameworkController {
 
 	@Autowired
@@ -53,9 +57,26 @@ public class CiFrameworkController {
 		return R.ok(excelContent);
 	}
 
+	/**
+	 * 获取最新添加的架构对象
+	 * @return
+	 */
 	@GetMapping("getRecentlyId")
 	public R getRecentlyCiFrameworkObjectId() {
 		Long recentlyCiFrameworkObjectId = ciFrameworkObjectService.getRecentlyCiFrameworkObjectId();
 		return R.ok(recentlyCiFrameworkObjectId);
 	}
+
+	@GetMapping("/getCiFrameworkObjectCalcInfo/{ciFrameworkObjectId}")
+	public R getCiFrameworkObjectCalcInfo(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		return R.ok();
+	}
+
+	@GetMapping("/delete/{ciFrameworkObjectId}")
+	public R deleteCiFrameworkObject(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId, HttpServletRequest request) {
+		log.info("ip地址为- " + request.getRemoteAddr() + " -的用户，发起了删除请求");
+		ciFrameworkObjectService.deleteCiFrameworkObjectById(ciFrameworkObjectId);
+		return R.ok();
+	}
+
 }
