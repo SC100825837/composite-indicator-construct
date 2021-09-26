@@ -12,12 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * @program: neo4j
- * @description:
- * @author: SunChao
- * @create: 2021-06-23 15:53
- **/
 @Slf4j
 @RestController
 @RequestMapping("/indicator")

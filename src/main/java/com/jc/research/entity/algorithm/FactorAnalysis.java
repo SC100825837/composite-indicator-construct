@@ -87,19 +87,6 @@ public class FactorAnalysis extends Algorithm {
         Double[][] weight = AlgorithmUtil.toDoubleArray(resultStrArr[2]);
         factorAnalysisPR.setIndicatorWeight(weight);
         //设置最终结果
-        /*TechnologyAchievementIndex tai = new TechnologyAchievementIndex();
-        Field[] fields = tai.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            if (field.getName().equals("id") || field.getName().equals("countryName")) {
-                continue;
-            }
-            try {
-                weightMap.put(field.getName(), (Double) field.get(tai));
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }*/
         factorAnalysisPR.setFinalResult(weight);
         return factorAnalysisPR;
     }

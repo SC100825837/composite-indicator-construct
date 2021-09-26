@@ -23,12 +23,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * @program: neo4j
- * @description:
- * @author: SunChao
- * @create: 2021-06-23 15:42
- **/
 @Slf4j
 @Service
 public class IndicatorsServiceImpl {

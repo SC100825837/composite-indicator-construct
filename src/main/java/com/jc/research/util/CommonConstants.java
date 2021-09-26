@@ -43,17 +43,17 @@ public interface CommonConstants {
 	/**
 	 * 前端工程名
 	 */
-	String FRONT_END_PROJECT = "pigx-ui";
+	String FRONT_END_PROJECT = "cic-ui";
 
 	/**
 	 * 后端工程名
 	 */
-	String BACK_END_PROJECT = "pigx";
+	String BACK_END_PROJECT = "cic";
 
 	/**
 	 * 公共参数
 	 */
-	String PIG_PUBLIC_PARAM_KEY = "PIG_PUBLIC_PARAM_KEY";
+	String PIG_PUBLIC_PARAM_KEY = "CIC_PUBLIC_PARAM_KEY";
 
 	/**
 	 * 成功标记
@@ -67,5 +67,5 @@ public interface CommonConstants {
 	/**
 	 * 默认存储bucket
 	 */
-	String BUCKET_NAME = "lengleng";
+	String BUCKET_NAME = "";
 }
