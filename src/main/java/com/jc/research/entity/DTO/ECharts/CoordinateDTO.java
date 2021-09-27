@@ -1,4 +1,4 @@
-package com.jc.research.entity.DTO;
+package com.jc.research.entity.DTO.ECharts;
 
 import lombok.Data;
 

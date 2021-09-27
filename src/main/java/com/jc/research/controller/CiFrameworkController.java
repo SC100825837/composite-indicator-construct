@@ -67,15 +67,28 @@ public class CiFrameworkController {
 		return R.ok(recentlyCiFrameworkObjectId);
 	}
 
-	@GetMapping("/getCiFrameworkObjectCalcInfo/{ciFrameworkObjectId}")
-	public R getCiFrameworkObjectCalcInfo(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
-		return R.ok();
+	@GetMapping("/getCiFrameworkObjectInfo/{ciFrameworkObjectId}")
+	public R getCiFrameworkObjectInfo(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		Map<String, Object> ciFrameworkObjectInfoMap;
+		try {
+			ciFrameworkObjectInfoMap = ciFrameworkObjectService.getCiFrameworkObjectInfo(ciFrameworkObjectId);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			return R.failed(e.getMessage());
+		}
+		return R.ok(ciFrameworkObjectInfoMap);
 	}
 
 	@GetMapping("/delete/{ciFrameworkObjectId}")
 	public R deleteCiFrameworkObject(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId, HttpServletRequest request) {
 		log.info("ip地址为- " + request.getRemoteAddr() + " -的用户，发起了删除请求");
 		ciFrameworkObjectService.deleteCiFrameworkObjectById(ciFrameworkObjectId);
+		return R.ok();
+	}
+
+	@GetMapping("switchFrameObj/{ciFrameworkObjectId}")
+	public R switchFrameObj(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		ciFrameworkObjectService.switchFrameObj(ciFrameworkObjectId);
 		return R.ok();
 	}
 

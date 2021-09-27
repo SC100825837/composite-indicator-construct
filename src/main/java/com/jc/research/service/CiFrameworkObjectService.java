@@ -2,6 +2,7 @@ package com.jc.research.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jc.research.entity.CiFrameworkObject;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,9 @@ public interface CiFrameworkObjectService extends IService<CiFrameworkObject> {
 
     Long getRecentlyCiFrameworkObjectId();
 
-    void getCiFrameworkObjectCalcInfo(Long ciFrameworkObjectId);
-
     int deleteCiFrameworkObjectById(Long ciFrameworkObjectId);
+
+    Map<String, Object> getCiFrameworkObjectInfo(Long ciFrameworkObjectId) throws Exception;
+
+    void switchFrameObj(Long ciFrameworkObjectId);
 }

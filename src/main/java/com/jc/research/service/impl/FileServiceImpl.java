@@ -53,9 +53,9 @@ public class FileServiceImpl {
             saveExcelDataToDB(file, excelDataList);
             // TODO 保存excel文件到文件服务器
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            return false;
+            throw new Exception("上传失败，请检查文件是否符合要求。");
         }
     }
 

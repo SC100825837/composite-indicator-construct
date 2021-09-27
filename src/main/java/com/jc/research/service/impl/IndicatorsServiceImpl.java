@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jc.research.entity.*;
 import com.jc.research.entity.DTO.*;
+import com.jc.research.entity.DTO.ECharts.CoordinateDTO;
 import com.jc.research.entity.algorithm.Algorithm;
 import com.jc.research.entity.algorithm.result.AlgorithmExecResult;
 import com.jc.research.entity.algorithm.result.FAMulValAnalysisPR;
@@ -107,12 +108,18 @@ public class IndicatorsServiceImpl {
     /**
      * 所有构建对象的综合指标值缓存
      */
-    private Map<Long, Double> targetsCompositeIndicatorMap = new HashMap<>();
+    @Getter
+    private Map<Long, LinkedHashMap<Long, Double>> allFrameObjectComInxMap = new HashMap<>();
 
     /**
      * 构建对象id缓存，如果实时数据和缓存不同则更新数据
      */
     private Long constructObjId = 0L;
+
+    /**
+     * 判断算法选择是否修改
+     */
+    private boolean ifAlgorithmModified = false;
 
     /**
      * 判断数据集是否修改
@@ -130,7 +137,7 @@ public class IndicatorsServiceImpl {
             return new GraphDTO(graphNodeList, graphEdgeList);
         }
         //每次需要重新构造数据时，初始化所有数据
-        resetData();
+//        resetData();
 
         // 查询最大id
         CiFrameworkIndicator indicatorWithMaxId = ciFrameworkIndicatorService.getBaseMapper()
@@ -320,8 +327,9 @@ public class IndicatorsServiceImpl {
      */
     public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long ciFrameworkObjectId) throws Exception {
         //判断数据集是否修改,没修改直接用缓存数据，修改了就重新计算
-        if (this.execResult == null || ifDataSetModified) {
-            this.targetsCompositeIndicatorMap.clear();
+        //TODO 切换了算法也需要重新计算
+        if (this.execResult == null || ifDataSetModified || ifAlgorithmModified) {
+            this.allFrameObjectComInxMap.remove(ciFrameworkObjectId);
             //通过算法门面执行算法计算
             this.execResult = AlgorithmFacade.calculate(algorithmMap, this.originDataArray);
         }
@@ -334,12 +342,12 @@ public class IndicatorsServiceImpl {
 
         //初始化综合指标
         double compositeIndicator = 0;
-        if (this.targetsCompositeIndicatorMap.isEmpty()) {
+        LinkedHashMap<Long, Double> specifiedFrameObjectInxMap = this.allFrameObjectComInxMap.get(ciFrameworkObjectId);
+        if (specifiedFrameObjectInxMap == null || specifiedFrameObjectInxMap.isEmpty()) {
             //计算所有构建对象的综合指标值
-            calcAllConstructTarget(missDataImputationArr, baseIndicatorWeight);
+            specifiedFrameObjectInxMap = calcAllConstructTarget(ciFrameworkObjectId, missDataImputationArr, baseIndicatorWeight);
         }
-
-        compositeIndicator = this.targetsCompositeIndicatorMap.get(targetId);
+        compositeIndicator = specifiedFrameObjectInxMap.get(targetId);
         /*//计算综合指标数值
         for (int i = 0; i < targetLineData.length; i++) {
             compositeIndicator += targetLineData[i] * baseIndicatorWeight[i];
@@ -380,17 +388,17 @@ public class IndicatorsServiceImpl {
      * @param missDataImputationArr
      * @param baseIndicatorWeight
      */
-    private void calcAllConstructTarget(Double[][] missDataImputationArr, Double[] baseIndicatorWeight) {
-        if (!this.targetsCompositeIndicatorMap.isEmpty()) {
-            return;
-        }
+    private LinkedHashMap<Long, Double> calcAllConstructTarget(Long ciFrameworkObjectId, Double[][] missDataImputationArr, Double[] baseIndicatorWeight) {
+        LinkedHashMap<Long, Double> allTargetInxMap = new LinkedHashMap<>();
         for (int i = 0; i < this.ciConstructTargetList.size(); i++) {
             double oneCompositeIndicator = 0D;
             for (int j = 0; j < baseIndicatorWeight.length; j++) {
                 oneCompositeIndicator += missDataImputationArr[i][j] * baseIndicatorWeight[j];
             }
-            this.targetsCompositeIndicatorMap.put(this.ciConstructTargetList.get(i).getId(), handleFractional(2, oneCompositeIndicator));
+            allTargetInxMap.put(this.ciConstructTargetList.get(i).getId(), handleFractional(2, oneCompositeIndicator));
         }
+        this.allFrameObjectComInxMap.put(ciFrameworkObjectId, allTargetInxMap);
+        return allTargetInxMap;
     }
 
     /**
@@ -736,32 +744,34 @@ public class IndicatorsServiceImpl {
      * @return
      */
     public boolean resetData() {
+        this.allFrameObjectComInxMap.clear();
+        switchFrameObj();
+        return true;
+    }
+
+    /**
+     * 单纯切换架构对象，缓存中所有架构对象的综合指数不需要删除
+     * 除非更换了算法，或者重新点击了计算，这个时候在计算综合指数的方法中会将 综合指数的缓存清空
+     */
+    public void switchFrameObj() {
         this.graphNodeList.clear();
         this.graphEdgeList.clear();
-
         this.indicatorGraphNodeList.clear();
         this.indicatorGraphEdgeList.clear();
 
         this.currentMaxNodeId = 0L;
-
         this.category = 0;
-
         this.checkExitMap.clear();
 
+        this.ciConstructTargetList.clear();
         this.originDataArray = null;
-
         this.targetObjLine = 0;
-
         this.baseIndicatorName = new ArrayList<>();
         this.weightMap.clear();
         this.baseIndicatorValueMap.clear();
 
         this.execResult = null;
-        this.targetsCompositeIndicatorMap.clear();
         this.constructObjId = 0L;
-
-        this.ifDataSetModified = true;
-        return true;
+        this.ifDataSetModified = false;
     }
-
 }
