@@ -8,6 +8,7 @@ import com.jc.research.entity.CiFrameworkObject;
 import com.jc.research.entity.DTO.ECharts.HistogramDTO;
 import com.jc.research.mapper.CiFrameworkIndicatorMapper;
 import com.jc.research.mapper.CiFrameworkObjectMapper;
+import com.jc.research.mapper.CiFrameworkTreepathMapper;
 import com.jc.research.service.CiConstructTargetService;
 import com.jc.research.service.CiFrameworkObjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class CiFrameworkObjectServiceImpl extends ServiceImpl<CiFrameworkObjectM
 
     @Autowired
     private CiFrameworkIndicatorMapper ciFrameworkIndicatorMapper;
+
+    @Autowired
+    private CiFrameworkTreepathMapper ciFrameworkTreepathMapper;
 
     @Autowired
     private CiConstructTargetService ciConstructTargetService;
@@ -64,8 +68,13 @@ public class CiFrameworkObjectServiceImpl extends ServiceImpl<CiFrameworkObjectM
 
     @Override
     @Transactional
-    public int deleteCiFrameworkObjectById(Long ciFrameworkObjectId) {
-        return ciFrameworkObjectMapper.deleteCiFrameworkObjectById(ciFrameworkObjectId);
+    public boolean deleteCiFrameworkObjectById(Long ciFrameworkObjectId) {
+        // 这里分开删除用事务控制数据一致性，联表太慢
+        this.removeById(ciFrameworkObjectId);
+        ciFrameworkIndicatorMapper.deleteById(ciFrameworkObjectId);
+        ciFrameworkTreepathMapper.deleteById(ciFrameworkObjectId);
+        ciConstructTargetService.removeById(ciFrameworkObjectId);
+        return true;
     }
 
     @Override

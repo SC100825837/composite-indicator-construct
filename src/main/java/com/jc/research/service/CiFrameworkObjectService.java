@@ -19,7 +19,7 @@ public interface CiFrameworkObjectService extends IService<CiFrameworkObject> {
 
     Long getRecentlyCiFrameworkObjectId();
 
-    int deleteCiFrameworkObjectById(Long ciFrameworkObjectId);
+    boolean deleteCiFrameworkObjectById(Long ciFrameworkObjectId);
 
     Map<String, Object> getCiFrameworkObjectInfo(Long ciFrameworkObjectId) throws Exception;
 
