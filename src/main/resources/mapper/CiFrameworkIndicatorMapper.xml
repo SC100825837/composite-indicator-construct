@@ -2,9 +2,9 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.jc.research.mapper.CiFrameworkIndicatorMapper">
+<mapper namespace="com.cvicse.cic.module.datasource.dao.CiFrameworkIndicatorDao">
 
-    <resultMap id="ciFrameworkIndicatorMap" type="com.jc.research.entity.CiFrameworkIndicator">
+    <resultMap id="ciFrameworkIndicatorMap" type="com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator">
         <id property="id" column="id"/>
         <result property="indicatorName" column="indicator_name"/>
         <result property="indicatorDescription" column="indicator_description"/>

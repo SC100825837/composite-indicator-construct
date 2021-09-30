@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.jc.research.mapper.AlgorithmExecStepMapper">
+<mapper namespace="com.cvicse.cic.module.algorithm.dao.AlgorithmExecStepDao">
 
-    <resultMap id="algorithmExecStepMap" type="com.jc.research.entity.AlgorithmExecStep">
+    <resultMap id="algorithmExecStepMap" type="com.cvicse.cic.module.algorithm.bean.AlgorithmExecStep">
         <id property="id" column="id"/>
         <result property="stepName" column="step_name" jdbcType="VARCHAR"/>
         <result property="stepValue" column="step_value" jdbcType="VARCHAR"/>

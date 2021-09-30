@@ -34,10 +34,10 @@ CREATE TABLE `algorithm`  (
 -- ----------------------------
 -- Records of algorithm
 -- ----------------------------
-INSERT INTO `algorithm` VALUES (1, 'FactorAnalysis', '因子分析', 'com.jc.research.entity.algorithm.FactorAnalysis', 'weightingAndAggregation', 4);
-INSERT INTO `algorithm` VALUES (2, 'ZScores', 'z分数', 'com.jc.research.entity.algorithm.ZScores', 'normalisation', 3);
-INSERT INTO `algorithm` VALUES (3, 'FactorAnalysisMulValAnalysis', '因子分析', 'com.jc.research.entity.algorithm.FactorAnalysisMulValAnalysis', 'multivariateAnalysis', 2);
-INSERT INTO `algorithm` VALUES (4, 'SingleImputation', '单一插补', 'com.jc.research.entity.algorithm.SingleImputation', 'missDataImputation', 1);
+INSERT INTO `algorithm` VALUES (1, 'FactorAnalysis', '因子分析', 'FactorAnalysis', 'weightingAndAggregation', 4);
+INSERT INTO `algorithm` VALUES (2, 'ZScores', 'z分数', 'ZScores', 'normalisation', 3);
+INSERT INTO `algorithm` VALUES (3, 'FactorAnalysisMulValAnalysis', '因子分析', 'FactorAnalysisMulValAnalysis', 'multivariateAnalysis', 2);
+INSERT INTO `algorithm` VALUES (4, 'SingleImputation', '单一插补', 'SingleImputation', 'missDataImputation', 1);
 
 -- ----------------------------
 -- Table structure for algorithm_exec_step
