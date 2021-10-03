@@ -2,26 +2,26 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.cvicse.cic.module.datasource.dao.CiFrameworkObjectDao">
+<mapper namespace="com.cvicse.cic.module.datasource.dao.DataIndicatorSystemDao">
 
-    <resultMap id="ciFrameworkObjectMap" type="com.cvicse.cic.module.datasource.bean.CiFrameworkObject">
+    <resultMap id="dataIndicatorSystemMap" type="com.cvicse.cic.module.datasource.bean.DataIndicatorSystem">
         <id property="id" column="id"/>
-        <result property="frameworkObjectName" column="framework_object_name" jdbcType="VARCHAR"/>
+        <result property="indicatorSystemName" column="indicator_system_name" jdbcType="VARCHAR"/>
     </resultMap>
 
-    <!--<insert id="save" parameterType="CiFrameworkObject" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO ci_framework_object (framework_object_name)
-        VALUES (#{framework_object_name});
+    <!--<insert id="save" parameterType="DataIndicatorSystem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO data_indicator_system (indicator_system_name)
+        VALUES (#{indicator_system_name});
     </insert>-->
 
-    <delete id="deleteCiFrameworkObjectById">
-        DELETE c1, c2, c3, c4 FROM ci_framework_object AS c1
+    <delete id="deleteDataIndicatorSystemById">
+        DELETE c1, c2, c3, c4 FROM data_indicator_system AS c1
         LEFT JOIN ci_framework_indicator AS c2
-        ON c1.id = c2.ci_framework_object_id
+        ON c1.id = c2.data_indicator_system_id
         LEFT JOIN ci_framework_treepath AS c3
-        ON c1.id = c3.ci_framework_object_id
+        ON c1.id = c3.data_indicator_system_id
         LEFT JOIN ci_construct_target AS c4
-        ON c1.id = c4.ci_framework_object_id
-        WHERE c1.id = ${ciFrameworkObjectId}
+        ON c1.id = c4.data_indicator_system_id
+        WHERE c1.id = ${dataIndicatorSystemId}
     </delete>
 </mapper>

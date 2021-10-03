@@ -67,7 +67,7 @@ CREATE TABLE `ci_construct_target`  (
   `id` bigint(16) NOT NULL AUTO_INCREMENT,
   `target_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `belong_column_index` int(2) NULL DEFAULT NULL,
-  `ci_framework_object_id` bigint(16) NULL DEFAULT NULL,
+  `data_indicator_system_id` bigint(16) NULL DEFAULT NULL,
   `data` json NULL,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 216 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
@@ -121,7 +121,7 @@ CREATE TABLE `ci_framework_indicator`  (
   `indicator_description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '指标描述',
   `indicator_level` int(2) NULL DEFAULT NULL COMMENT '指标层级',
   `head_flag` tinyint(1) NULL DEFAULT NULL COMMENT '是否是表头',
-  `ci_framework_object_id` bigint(16) NULL DEFAULT NULL COMMENT '综合指数架构对象id',
+  `data_indicator_system_id` bigint(16) NULL DEFAULT NULL COMMENT '综合指数架构对象id',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 12226 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
@@ -2335,12 +2335,12 @@ INSERT INTO `ci_framework_indicator` VALUES (12224, '37', NULL, 9, 0, 59);
 INSERT INTO `ci_framework_indicator` VALUES (12225, '51', NULL, 10, 0, 59);
 
 -- ----------------------------
--- Table structure for ci_framework_object
+-- Table structure for data_indicator_system
 -- ----------------------------
-DROP TABLE IF EXISTS `ci_framework_object`;
-CREATE TABLE `ci_framework_object`  (
+DROP TABLE IF EXISTS `data_indicator_system`;
+CREATE TABLE `data_indicator_system`  (
   `id` bigint(16) NOT NULL AUTO_INCREMENT,
-  `framework_object_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '指标架构名称',
+  `indicator_system_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '指标架构名称',
   `max_depth` int(2) NULL DEFAULT NULL COMMENT '最深的层级',
   `file_url` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件url路径',
   `upload_date` datetime(0) NULL DEFAULT NULL COMMENT '上传时间',
@@ -2350,10 +2350,10 @@ CREATE TABLE `ci_framework_object`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 60 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of ci_framework_object
+-- Records of data_indicator_system
 -- ----------------------------
-INSERT INTO `ci_framework_object` VALUES (57, '开发案例-带有年份数据和指标说明.xlsx', 11, NULL, '2021-09-27 22:15:53', NULL, 5);
-INSERT INTO `ci_framework_object` VALUES (58, '科技成就指数案例.xlsx', 25, NULL, '2021-09-27 22:16:09', NULL, 2);
+INSERT INTO `data_indicator_system` VALUES (57, '开发案例-带有年份数据和指标说明.xlsx', 11, NULL, '2021-09-27 22:15:53', NULL, 5);
+INSERT INTO `data_indicator_system` VALUES (58, '科技成就指数案例.xlsx', 25, NULL, '2021-09-27 22:16:09', NULL, 2);
 
 -- ----------------------------
 -- Table structure for ci_framework_treepath
@@ -2363,7 +2363,7 @@ CREATE TABLE `ci_framework_treepath`  (
   `ancestor` bigint(16) NOT NULL COMMENT '祖先节点id',
   `descendant` bigint(16) NOT NULL COMMENT '后代节点id',
   `path_depth` int(2) NULL DEFAULT NULL COMMENT '节点深度，自身为0',
-  `ci_framework_object_id` bigint(20) NULL DEFAULT NULL COMMENT '综合指数架构对象id',
+  `data_indicator_system_id` bigint(20) NULL DEFAULT NULL COMMENT '综合指数架构对象id',
   PRIMARY KEY (`ancestor`, `descendant`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
@@ -19409,7 +19409,7 @@ INSERT INTO `ci_framework_treepath` VALUES (12225, 12225, 0, 59);
 DROP TABLE IF EXISTS `composite_indicator`;
 CREATE TABLE `composite_indicator`  (
   `id` bigint(16) NOT NULL,
-  `ci_framework_object_id` bigint(16) NULL DEFAULT NULL COMMENT '架构对象的id',
+  `data_indicator_system_id` bigint(16) NULL DEFAULT NULL COMMENT '架构对象的id',
   `com_indicator` json NULL COMMENT '计算得到的综合指标',
   `use_algorithm` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所用的算法',
   PRIMARY KEY (`id`) USING BTREE

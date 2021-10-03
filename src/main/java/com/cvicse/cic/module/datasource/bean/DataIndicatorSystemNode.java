@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CiFrameworkIndicator implements Comparable<CiFrameworkIndicator> {
+public class DataIndicatorSystemNode implements Comparable<DataIndicatorSystemNode> {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -19,11 +19,6 @@ public class CiFrameworkIndicator implements Comparable<CiFrameworkIndicator> {
      * 指标名称
      */
     private String indicatorName;
-
-    /**
-     * 指标说明
-     */
-    private String indicatorDescription;
 
     /**
      * 指标层级
@@ -36,12 +31,12 @@ public class CiFrameworkIndicator implements Comparable<CiFrameworkIndicator> {
     private boolean headFlag;
 
     /**
-     * 综合指标架构对象id
+     * 指数体系id
      */
-    private Long ciFrameworkObjectId;
+    private Long dataIndicatorSystemId;
 
     @Override
-    public int compareTo(@NotNull CiFrameworkIndicator o) {
+    public int compareTo(@NotNull DataIndicatorSystemNode o) {
         return this.getId().compareTo(o.getId());
     }
 }

@@ -1,14 +1,20 @@
 package com.cvicse.cic.module.datasource.service.impl;
 
 import com.alibaba.excel.EasyExcel;
-import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkObject;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cvicse.cic.handler.MinioTemplate;
+import com.cvicse.cic.module.datasource.bean.*;
+import com.cvicse.cic.module.datasource.dao.DataIndicatorSystemDao;
+import com.cvicse.cic.module.datasource.dao.DataOriginFileDao;
 import com.cvicse.cic.module.datasource.service.*;
+import com.cvicse.cic.util.CommonConstant;
 import com.cvicse.cic.util.excel.NoModelDataListener;
+import com.cvicse.cic.util.exception.BusinessException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.minio.errors.MinioException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,25 +24,32 @@ import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
+@Slf4j
 @Service
-public class FileServiceImpl implements FileService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileServiceImpl.class);
+public class DataOriginFileServiceImpl extends ServiceImpl<DataOriginFileDao, DataOriginFile> implements DataOriginFileService {
 
     @Autowired
-    private CiFrameworkObjectService ciFrameworkObjectService;
+    private MinioTemplate minioTemplate;
 
     @Autowired
-    private CiFrameworkIndicatorService ciFrameworkIndicatorService;
+    private DataIndicatorSystemService dataIndicatorSystemService;
 
     @Autowired
-    private CiFrameworkTreepathService ciFrameworkTreepathService;
+    private DataIndicatorSystemNodeService dataIndicatorSystemNodeService;
 
     @Autowired
-    private CiConstructTargetService ciConstructTargetService;
+    private DataIndicatorSystemTreepathService dataIndicatorSystemTreepathService;
+
+    @Autowired
+    private DataIndicatorSystemDataService dataIndicatorSystemDataService;
 
     /**
      * 读取web上传的excel文件
@@ -45,17 +58,68 @@ public class FileServiceImpl implements FileService {
      */
     @Override
     @Transactional
-    public boolean resolveExcel(MultipartFile file) {
-        List<Map<Integer, String>> excelDataList = new ArrayList<Map<Integer, String>>();
+    public void handleExcel(MultipartFile file) {
         try {
+            List<Map<Integer, String>> excelDataList = new ArrayList<>();
             //解析excel
             EasyExcel.read(file.getInputStream(), new NoModelDataListener(excelDataList)).sheet().doRead();
-            saveExcelDataToDB(file, excelDataList);
-            // TODO 保存excel文件到文件服务器
-            return true;
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new RuntimeException("上传失败，请检查文件是否符合要求。");
+
+            // 校验
+            checkExcel(file, excelDataList);
+
+            // 保存到数据库
+            FutureTask<DataIndicatorSystem> futureTask = new FutureTask<>(() -> saveExcelDataToDB(file, excelDataList));
+            new Thread(futureTask, "saveExcelDataToDBThread").start();
+
+            // 保存excel文件到文件服务器
+            uploadToMinio(file, CommonConstant.BUCKET_NAME);
+            DataOriginFile dataOriginFile = new DataOriginFile(null, file.getOriginalFilename(), CommonConstant.BUCKET_NAME, file.getOriginalFilename(), null, LocalDateTime.now());
+            this.save(dataOriginFile);
+            // 从异步任务获取保存的指标体系对象，并设置关联源文件的id
+            DataIndicatorSystem dataIndicatorSystem = futureTask.get();
+            dataIndicatorSystem.setOriginFileId(dataOriginFile.getId());
+            // 更新指标体系关联的源文件id
+            dataIndicatorSystemService.updateById(dataIndicatorSystem);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new BusinessException("文件解析失败，请联系技术人员。");
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e.getMessage(), e);
+            throw new BusinessException("保存数据库失败，请联系技术人员。");
+        }
+    }
+
+    /**
+     * 校验excel
+     * @param excelDataList
+     */
+    private void checkExcel(MultipartFile file, List<Map<Integer, String>> excelDataList) {
+        DataOriginFile dataOriginFile = this.getOne(new QueryWrapper<DataOriginFile>().eq("origin_file_name", file.getOriginalFilename())
+                .last("limit 1"));
+        if (dataOriginFile != null) {
+            throw new BusinessException("上传失败，文件已存在。");
+        }
+        if (excelDataList.isEmpty()) {
+            throw new BusinessException("解析到数据为空，请检查上传文件.");
+        }
+        if (excelDataList.size() == 1) {
+            throw new BusinessException("解析到只有表头，请检查上传文件.");
+        }
+        // 获取表头数据，以表头数据为基准进行校验
+        Map<Integer, String> excelHeadData = excelDataList.get(0);
+        for (int i = 0; i < excelDataList.size(); i++) {
+            if (excelDataList.get(i).size() < excelHeadData.size()) {
+                throw new BusinessException("上传文件第" + i + "行出现数据缺失，请检查文件。");
+            }
+            if (excelDataList.get(i).size() > excelHeadData.size()) {
+                throw new BusinessException("上传文件第" + i + "行出现冗余数据，请检查文件。");
+            }
+            /*for (Integer columnIndex : excelDataList.get(i).keySet()) {
+                String cell = excelDataList.get(i).get(columnIndex);
+                if (cell == null || cell.trim().equals("")) {
+                    throw new BusinessException("上传文件第" + i + "行第" + columnIndex + "列单元格数据为空，请检查文件。");
+                }
+            }*/
         }
     }
 
@@ -64,10 +128,10 @@ public class FileServiceImpl implements FileService {
      * @param file
      * @param excelDataList
      */
-    private void saveExcelDataToDB(MultipartFile file, List<Map<Integer, String>> excelDataList) throws Exception {
+    private DataIndicatorSystem saveExcelDataToDB(MultipartFile file, List<Map<Integer, String>> excelDataList) {
         //保存架构对象
-        CiFrameworkObject ciFrameworkObject = new CiFrameworkObject(null, file.getOriginalFilename(), excelDataList.get(0).keySet().size(), null, null, LocalDateTime.now(), null);
-        ciFrameworkObjectService.save(ciFrameworkObject);
+        DataIndicatorSystem dataIndicatorSystem = new DataIndicatorSystem(null, file.getName(), excelDataList.get(0).size() - 1, null);
+        dataIndicatorSystemService.save(dataIndicatorSystem);
         /**
          * 每行数据下标为0的单元格不是null，则说明这是一棵新的树；若下标的单元格为null，则说明这是树上的某级子节点
          * 创建树结构的思路：先把下标为0的这一行暂存，说明自这一行开始直到下一个下标为0 的单元格不为null的行 为止，都是这一棵树
@@ -79,7 +143,7 @@ public class FileServiceImpl implements FileService {
         //是否需要添加数据，以保存完整树结构
         boolean addCellFlag = false;
         // 存储数据列的集合
-        List<CiConstructTarget> constructTargetList = new ArrayList<>(excelDataList.size());
+        List<DataIndicatorSystemData> constructTargetList = new ArrayList<>(excelDataList.size());
         // 存放数据，最后会转成json存到CiConstructTarget的data属性中
         Map<Integer, String[]> dataColumnMap = new HashMap<>();
         // 在读取每一行数据的时候，用来判断是否读到数据列的单元格
@@ -99,18 +163,18 @@ public class FileServiceImpl implements FileService {
                         if (ifDataIndex == -1) {
                             ifDataIndex = col;
                         }
-                        CiConstructTarget ciConstructTarget = new CiConstructTarget();
-                        ciConstructTarget.setTargetName(cell.replace("#", ""));
-                        ciConstructTarget.setBelongColumnIndex(col);
-                        ciConstructTarget.setCiFrameworkObjectId(ciFrameworkObject.getId());
-                        constructTargetList.add(ciConstructTarget);
+                        DataIndicatorSystemData dataIndicatorSystemData = new DataIndicatorSystemData();
+                        dataIndicatorSystemData.setDataHead(cell.replace("#", ""));
+                        dataIndicatorSystemData.setBelongColumnIndex(col);
+                        dataIndicatorSystemData.setIndicatorSystemId(dataIndicatorSystem.getId());
+                        constructTargetList.add(dataIndicatorSystemData);
                     }
-                    CiFrameworkIndicator ciFrameworkIndicator = new CiFrameworkIndicator();
-                    ciFrameworkIndicator.setHeadFlag(true);
-                    ciFrameworkIndicator.setIndicatorName(cell);
-                    ciFrameworkIndicator.setIndicatorLevel(col);
-                    ciFrameworkIndicator.setCiFrameworkObjectId(ciFrameworkObject.getId());
-                    ciFrameworkIndicatorService.save(ciFrameworkIndicator);
+                    DataIndicatorSystemNode dataIndicatorSystemNode = new DataIndicatorSystemNode();
+                    dataIndicatorSystemNode.setHeadFlag(true);
+                    dataIndicatorSystemNode.setIndicatorName(cell);
+                    dataIndicatorSystemNode.setIndicatorLevel(col);
+                    dataIndicatorSystemNode.setDataIndicatorSystemId(dataIndicatorSystem.getId());
+                    dataIndicatorSystemNodeService.save(dataIndicatorSystemNode);
                 }
                 continue;
             }
@@ -128,19 +192,19 @@ public class FileServiceImpl implements FileService {
                 if (cell == null) {
                     continue;
                 }
-                CiFrameworkIndicator ciFrameworkIndicator = new CiFrameworkIndicator();
-                ciFrameworkIndicator.setHeadFlag(false);
-                ciFrameworkIndicator.setIndicatorName(cell);
-                ciFrameworkIndicator.setIndicatorLevel(col);
-                ciFrameworkIndicator.setCiFrameworkObjectId(ciFrameworkObject.getId());
-                ciFrameworkIndicatorService.save(ciFrameworkIndicator);
+                DataIndicatorSystemNode dataIndicatorSystemNode = new DataIndicatorSystemNode();
+                dataIndicatorSystemNode.setHeadFlag(false);
+                dataIndicatorSystemNode.setIndicatorName(cell);
+                dataIndicatorSystemNode.setIndicatorLevel(col);
+                dataIndicatorSystemNode.setDataIndicatorSystemId(dataIndicatorSystem.getId());
+                dataIndicatorSystemNodeService.save(dataIndicatorSystemNode);
 
                 // 保存数据列中的数据到集合
                 // 判断该单元格是否属于数据列
                 if (col >= ifDataIndex) {
-                    for (CiConstructTarget ciConstructTarget : constructTargetList) {
+                    for (DataIndicatorSystemData dataIndicatorSystemData : constructTargetList) {
                         // 取出构建对象所属的列，也就是数据列的下标
-                        Integer belongColumnIndex = ciConstructTarget.getBelongColumnIndex();
+                        Integer belongColumnIndex = dataIndicatorSystemData.getBelongColumnIndex();
                         // 数据对象所属列和当前单元格所属的列相同时才保存数据
                         if (belongColumnIndex.equals(col)) {
                             // 设置数组长度时 -1 是因为excelDataList中含有表头
@@ -154,8 +218,8 @@ public class FileServiceImpl implements FileService {
                                     // 减一时因为表头那一行已经跳过，此时的i是从1开始的
                                     oneDataArr[i - 1] = String.valueOf(cellData / 100D);
                                 } catch (NumberFormatException e) {
-                                    LOGGER.error(e.getMessage(), e);
-                                    throw new Exception("第" + i + "行，第" + col + "列单元格数据无法识别为数字，请重新编辑");
+                                    log.error(e.getMessage(), e);
+                                    throw new BusinessException("第" + i + "行，第" + col + "列单元格数据无法识别为数字，请重新编辑");
                                 }
                             } else {
                                 // 减一时因为表头那一行已经跳过，此时的i是从1开始的
@@ -168,52 +232,63 @@ public class FileServiceImpl implements FileService {
                 // 第一个单元格不为null，说明这是这棵完整的子树的开始
                 if (addCellFlag) {
                     //将每个单元格对象的id放入集合，以保存整个完整树结构
-                    entireSubtree.add(ciFrameworkIndicator.getId());
+                    entireSubtree.add(dataIndicatorSystemNode.getId());
                     // 如果是最后一列，则说明完整的树结构构建完成
                     if (col == rowMap.keySet().size() - 1) {
                         // 创建用来存储完整树结构层级关系的集合
-                        List<CiFrameworkTreepath> oneRowTreePathList = new ArrayList<>();
+                        List<DataIndicatorSystemTreepath> oneRowTreePathList = new ArrayList<>();
                         for (int m = 0; m < entireSubtree.size(); m++) {
                             for (int n = m; n < entireSubtree.size(); n++) {
                                 //将每个树结构关系对象放入集合
-                                oneRowTreePathList.add(new CiFrameworkTreepath(entireSubtree.get(m), entireSubtree.get(n), n - m, ciFrameworkObject.getId()));
+                                oneRowTreePathList.add(new DataIndicatorSystemTreepath(entireSubtree.get(m), entireSubtree.get(n), n - m, dataIndicatorSystem.getId()));
                             }
                         }
                         //保存完整的树结构关系
-                        ciFrameworkTreepathService.saveBatch(oneRowTreePathList);
+                        dataIndicatorSystemTreepathService.saveBatch(oneRowTreePathList);
                     }
                 } else { //else 说明该行第一个单元格是空，也就是说这行中的数据是完整树的子节点数据
                     //如果不是重新构建完整子树的第一行数据，则更新该集合数据，保证和遍历到的该行数据一致
-                    entireSubtree.set(col, ciFrameworkIndicator.getId());
+                    entireSubtree.set(col, dataIndicatorSystemNode.getId());
                     //存储该行树形关系的集合
-                    List<CiFrameworkTreepath> oneRowTreePathList = new ArrayList<>();
+                    List<DataIndicatorSystemTreepath> oneRowTreePathList = new ArrayList<>();
                     // 添加自己指向自己的节点
-                    oneRowTreePathList.add(new CiFrameworkTreepath(ciFrameworkIndicator.getId(), ciFrameworkIndicator.getId(), 0, ciFrameworkObject.getId()));
+                    oneRowTreePathList.add(new DataIndicatorSystemTreepath(dataIndicatorSystemNode.getId(), dataIndicatorSystemNode.getId(), 0, dataIndicatorSystem.getId()));
                     // 从第一个不为null的节点开始创建关系：
                     for (int m = 0; m < col; m++) {
-                        oneRowTreePathList.add(new CiFrameworkTreepath(entireSubtree.get(m), ciFrameworkIndicator.getId(), ciFrameworkIndicator.getIndicatorLevel() - m, ciFrameworkObject.getId()));
+                        oneRowTreePathList.add(new DataIndicatorSystemTreepath(entireSubtree.get(m), dataIndicatorSystemNode.getId(), dataIndicatorSystemNode.getIndicatorLevel() - m, dataIndicatorSystem.getId()));
                     }
-                    ciFrameworkTreepathService.saveBatch(oneRowTreePathList);
+                    dataIndicatorSystemTreepathService.saveBatch(oneRowTreePathList);
                 }
             }
             addCellFlag = false;
         }
-        ciFrameworkObject.setDataFirstColumn(ifDataIndex);
-        ciFrameworkObjectService.updateById(ciFrameworkObject);
+        dataIndicatorSystemService.updateById(dataIndicatorSystem);
         // 把map中的数据转字符串保存到对象属性中
         for (Integer columnIndex : dataColumnMap.keySet()) {
-            for (CiConstructTarget ciConstructTarget : constructTargetList) {
-                Integer belongColumnIndex = ciConstructTarget.getBelongColumnIndex();
+            for (DataIndicatorSystemData dataIndicatorSystemData : constructTargetList) {
+                Integer belongColumnIndex = dataIndicatorSystemData.getBelongColumnIndex();
                 if (belongColumnIndex.equals(columnIndex)) {
                     try {
-                        ciConstructTarget.setData(new ObjectMapper().writeValueAsString(dataColumnMap.get(columnIndex)));
+                        dataIndicatorSystemData.setDataValue(new ObjectMapper().writeValueAsString(dataColumnMap.get(columnIndex)));
                     } catch (JsonProcessingException e) {
-                        LOGGER.error(e.getMessage(), e);
+                        log.error(e.getMessage(), e);
                     }
                 }
             }
         }
-        ciConstructTargetService.saveBatch(constructTargetList);
+        dataIndicatorSystemDataService.saveBatch(constructTargetList);
+        return dataIndicatorSystem;
+    }
+
+    @Override
+    public void uploadToMinio(MultipartFile file, String bucketName) {
+        try {
+            minioTemplate.createBucket(CommonConstant.BUCKET_NAME);
+            minioTemplate.putObject(CommonConstant.BUCKET_NAME, file.getOriginalFilename(), file.getInputStream());
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new BusinessException("文件上传服务器失败，请联系技术人员。");
+        }
     }
 
     /**
@@ -227,7 +302,7 @@ public class FileServiceImpl implements FileService {
 
         //获取根目录
         File fileRootPath = new File(ResourceUtils.getURL("classpath:").getPath());
-        LOGGER.info("根路径为： " + fileRootPath);
+        log.info("根路径为： " + fileRootPath);
         //如果上传目录为/static/images/upload/，则可以如下获取：
 //        File upload = new File(path.getAbsolutePath(), "static/images/upload/");
         //在开发测试模式时，得到的地址为：{项目跟目录}/target/static/images/upload/
@@ -235,14 +310,14 @@ public class FileServiceImpl implements FileService {
         File filePath = new File(fileRootPath.getAbsolutePath(), "upload/raw_data_23_excel.xlsx");
 //        System.out.println("filePath url:" + filePath.getAbsolutePath());
         if (!filePath.exists()) {
-            LOGGER.error("目标文件" + filePath.getAbsolutePath() + "不存在");
+            log.error("目标文件" + filePath.getAbsolutePath() + "不存在");
             throw new FileNotFoundException("文件不存在");
         }
 
         // 有个很重要的点 DemoDataListener 不能被spring管理，要每次读取excel都要new,然后里面用到spring可以构造方法传进去
         // 写法1：
         // 这里 需要指定读用哪个class去读，然后读取第一个sheet 文件流会自动关闭
-        LOGGER.info("开始读取excel文件，文件路径是：" + filePath.getAbsolutePath());
+        log.info("开始读取excel文件，文件路径是：" + filePath.getAbsolutePath());
 
         // 写法2：
         /*ExcelReader excelReader = null;

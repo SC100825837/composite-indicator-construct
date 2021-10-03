@@ -20,9 +20,9 @@ public class IndicatorsController {
 	@Autowired
 	private IndicatorsServiceImpl indicatorsServiceImpl;
 
-	@GetMapping("/getBaseGraph/{ciFrameworkObjectId}")
-	public ResultData getBaseGraph(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
-		return ResultData.success(indicatorsServiceImpl.getBaseGraph(ciFrameworkObjectId));
+	@GetMapping("/getBaseGraph/{dataIndicatorSystemId}")
+	public ResultData getBaseGraph(@PathVariable("dataIndicatorSystemId") Long dataIndicatorSystemId) {
+		return ResultData.success(indicatorsServiceImpl.getBaseGraph(dataIndicatorSystemId));
 	}
 
 	@PostMapping("/indicatorCalc")
@@ -49,9 +49,9 @@ public class IndicatorsController {
 		return R.ok(originDataArray);
 	}*/
 
-	@GetMapping("/getProcessResult/{ciFrameworkObjectId}")
-	public ResultData<ProcessResultDTO> getProcessResult(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
-		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData(ciFrameworkObjectId);
+	@GetMapping("/getProcessResult/{dataIndicatorSystemId}")
+	public ResultData<ProcessResultDTO> getProcessResult(@PathVariable("dataIndicatorSystemId") Long dataIndicatorSystemId) {
+		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData(dataIndicatorSystemId);
 		if (processData == null) {
 			return ResultData.fail("数据为空");
 		}

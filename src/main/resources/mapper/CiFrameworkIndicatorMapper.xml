@@ -4,26 +4,26 @@
 
 <mapper namespace="com.cvicse.cic.module.datasource.dao.CiFrameworkIndicatorDao">
 
-    <resultMap id="ciFrameworkIndicatorMap" type="com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator">
+    <resultMap id="ciFrameworkIndicatorMap" type="com.cvicse.cic.module.datasource.bean.DataIndicatorSystemNode">
         <id property="id" column="id"/>
         <result property="indicatorName" column="indicator_name"/>
         <result property="indicatorDescription" column="indicator_description"/>
         <result property="indicatorLevel" column="indicator_level"/>
         <result property="headFlag" column="head_flag"/>
-        <result property="ciFrameworkObjectId" column="ci_framework_object_id"/>
+        <result property="dataIndicatorSystemId" column="data_indicator_system_id"/>
     </resultMap>
 
     <select id="selectExcelHead" resultMap="ciFrameworkIndicatorMap">
         SELECT indicator_name, indicator_level
         FROM ci_framework_indicator
-        WHERE ci_framework_object_id = ${ciObjId}
+        WHERE data_indicator_system_id = ${ciObjId}
           AND head_flag = true
     </select>
 
     <select id="selectCiIndicatorByCiObjIdAndDepth" resultMap="ciFrameworkIndicatorMap">
         SELECT id, indicator_name, indicator_level
         FROM ci_framework_indicator
-        WHERE ci_framework_object_id = ${ciObjId}
+        WHERE data_indicator_system_id = ${ciObjId}
           AND indicator_level = ${depth}
           AND head_flag = false
     </select>

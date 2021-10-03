@@ -9,20 +9,23 @@ import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
-public class CiFrameworkObject {
+public class DataIndicatorSystem {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String frameworkObjectName;
+    /**
+     * 指标体系名称
+     */
+    private String indicatorSystemName;
 
+    /**
+     * 最深的层级
+     */
     private Integer maxDepth;
 
-    private Integer dataFirstColumn;
-
-    private String fileUrl;
-
-    private LocalDateTime uploadDate;
-
-    private String uploaderId;
+    /**
+     * 所属源文件id
+     */
+    private Long originFileId;
 }

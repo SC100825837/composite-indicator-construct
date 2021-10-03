@@ -6,6 +6,7 @@ import com.cvicse.cic.module.algorithm.bean.Algorithm;
 import com.cvicse.cic.module.algorithm.dao.AlgorithmExecStepDao;
 import com.cvicse.cic.module.algorithm.dao.AlgorithmDao;
 import com.cvicse.cic.module.algorithm.service.AlgorithmService;
+import com.cvicse.cic.util.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -32,7 +33,7 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmDao, Algorithm> i
         //数据库查询所有算法
         List<Algorithm> allAlgorithms = algorithmDao.getAllAlgorithms();
         if (allAlgorithms.isEmpty()) {
-            throw new RuntimeException("算法为空");
+            throw new BusinessException("算法为空");
         }
         //按照步骤名称分组
         Map<String, List<Algorithm>> allAlgorithmsByStepName = allAlgorithms.stream()
@@ -52,7 +53,7 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmDao, Algorithm> i
     public List<AlgorithmExecStep> getAllAlgorithmSteps() {
         List<AlgorithmExecStep> allAlgorithmSteps = algorithmExecStepDao.getAllAlgorithmSteps();
         if (allAlgorithmSteps.isEmpty()) {
-            throw new RuntimeException("算法为空");
+            throw new BusinessException("算法为空");
         }
         return allAlgorithmSteps;
     }

@@ -4,7 +4,7 @@
 
 <mapper namespace="com.cvicse.cic.module.datasource.dao.CiConstructTargetDao">
 
-    <resultMap id="ciConstructTargetMap" type="com.cvicse.cic.module.datasource.bean.CiConstructTarget">
+    <resultMap id="ciConstructTargetMap" type="com.cvicse.cic.module.datasource.bean.DataIndicatorSystemData">
         <id property="id" column="id"/>
         <result property="targetName" column="target_name" jdbcType="VARCHAR"/>
         <result property="data" column="data"/>

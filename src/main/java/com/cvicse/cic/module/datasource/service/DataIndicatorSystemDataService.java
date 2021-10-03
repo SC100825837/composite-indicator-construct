@@ -1,7 +1,7 @@
 package com.cvicse.cic.module.datasource.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemData;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import java.util.List;
  * @author: SunChao
  * @create: 2021-08-25 18:56
  **/
-public interface CiConstructTargetService extends IService<CiConstructTarget> {
+public interface DataIndicatorSystemDataService extends IService<DataIndicatorSystemData> {
 
-    List<CiConstructTarget> getAllTargetsByFrameworkId(Long frameworkId);
+    List<DataIndicatorSystemData> getAllTargetsByFrameworkId(Long frameworkId);
 }

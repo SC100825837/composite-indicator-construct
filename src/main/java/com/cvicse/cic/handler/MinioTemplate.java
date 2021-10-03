@@ -1,6 +1,8 @@
 package com.cvicse.cic.handler;
 
+import com.cvicse.cic.util.exception.BusinessException;
 import io.minio.*;
+import io.minio.errors.*;
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +10,11 @@ import lombok.SneakyThrows;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,8 +131,7 @@ public class MinioTemplate implements InitializingBean {
      * @param objectName 文件名称
      * @return 二进制流
      */
-    @SneakyThrows
-    public InputStream getObject(String bucketName, String objectName) {
+    public InputStream getObject(String bucketName, String objectName) throws IOException, GeneralSecurityException, MinioException, ReflectiveOperationException {
         return minioClient.getObject(GetObjectArgs.builder()
                 .bucket(bucketName)
                 .object(objectName)
@@ -177,7 +182,7 @@ public class MinioTemplate implements InitializingBean {
      * @return
      */
     @SneakyThrows
-    public ObjectWriteResponse putObject(String bucketName, String objectName, InputStream inputStream) {
+    public ObjectWriteResponse putObject(String bucketName, String objectName, InputStream inputStream) throws Exception {
         return minioClient.putObject(PutObjectArgs.builder()
                 .bucket(bucketName)
                 .object(objectName)
@@ -192,7 +197,7 @@ public class MinioTemplate implements InitializingBean {
      * @param objectName
      * @param fileName
      */
-    public void uploadObject(String bucketName, String objectName, String fileName) throws Exception {
+    public void uploadObject(String bucketName, String objectName, String fileName) throws IOException, MinioException, GeneralSecurityException {
         // Upload an JSON file.
         minioClient.uploadObject(UploadObjectArgs.builder()
                 .bucket(bucketName)

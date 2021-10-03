@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class CiFrameworkTreepath {
+public class DataIndicatorSystemTreepath {
 
     /**
      * 祖先id
@@ -27,7 +27,7 @@ public class CiFrameworkTreepath {
     private Integer pathDepth;
 
     /**
-     * 综合指标架构对象id
+     * 指数体系id
      */
-    private Long ciFrameworkObjectId;
+    private Long dataIndicatorSystemId;
 }

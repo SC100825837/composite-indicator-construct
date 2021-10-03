@@ -19,6 +19,6 @@ public class CalcExecParamDTO implements Serializable {
 
     private Double[][] modifiedDataList;
 
-    private Long ciFrameworkObjectId;
+    private Long dataIndicatorSystemId;
 
 }

@@ -44,23 +44,23 @@ public class ResultData<T> implements Serializable {
 	}
 
 	public static <T> ResultData<T> fail() {
-		return restResult(null, ReturnCode.RC200.getCode(), null);
+		return restResult(null, ReturnCode.RC500.getCode(), ReturnCode.RC500.getMessage());
 	}
 
 	public static <T> ResultData<T> fail(String msg) {
-		return restResult(null, ReturnCode.RC200.getCode(), msg);
+		return restResult(null, ReturnCode.RC500.getCode(), msg);
 	}
 
 	public static <T> ResultData<T> fail(T data) {
-		return restResult(data, ReturnCode.RC200.getCode(), null);
+		return restResult(data, ReturnCode.RC500.getCode(), null);
 	}
 
 	public static <T> ResultData<T> fail(T data, String msg) {
-		return restResult(data, ReturnCode.RC200.getCode(), msg);
+		return restResult(data, ReturnCode.RC500.getCode(), msg);
 	}
 
 	public static <T> ResultData<T> fail(int code, String msg) {
-		return restResult(null, ReturnCode.RC200.getCode(), msg);
+		return restResult(null, ReturnCode.RC500.getCode(), msg);
 	}
 
 	private static <T> ResultData<T> restResult(T data, int code, String msg) {

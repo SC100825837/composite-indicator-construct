@@ -1,8 +1,8 @@
 package com.cvicse.cic.module.datasource.controller;
 
-import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemData;
 import com.cvicse.cic.util.ResultData;
-import com.cvicse.cic.module.datasource.service.CiConstructTargetService;
+import com.cvicse.cic.module.datasource.service.DataIndicatorSystemDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,14 +20,14 @@ import java.util.List;
  **/
 @RestController
 @RequestMapping("/constructTarget")
-public class CiConstructTargetController {
+public class DataIndicatorSystemDataController {
 
     @Autowired
-    private CiConstructTargetService ciConstructTargetService;
+    private DataIndicatorSystemDataService dataIndicatorSystemDataService;
 
-    @GetMapping("/getAllCiConstructTargets/{ciFrameworkObjectId}")
-    public ResultData<List<CiConstructTarget>> getAllCiConstructTargets(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
-        return ResultData.success(ciConstructTargetService.getAllTargetsByFrameworkId(ciFrameworkObjectId));
+    @GetMapping("/getAllCiConstructTargets/{dataIndicatorSystemId}")
+    public ResultData<List<DataIndicatorSystemData>> getAllCiConstructTargets(@PathVariable("dataIndicatorSystemId") Long dataIndicatorSystemId) {
+        return ResultData.success(dataIndicatorSystemDataService.getAllTargetsByFrameworkId(dataIndicatorSystemId));
     }
 
 }

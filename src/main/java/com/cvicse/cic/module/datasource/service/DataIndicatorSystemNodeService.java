@@ -1,7 +1,7 @@
 package com.cvicse.cic.module.datasource.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemNode;
 
 /**
  * @program: composite-indicator-construct
@@ -9,6 +9,6 @@ import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
  * @author: SunChao
  * @create: 2021-08-25 18:56
  **/
-public interface CiFrameworkTreepathService extends IService<CiFrameworkTreepath> {
+public interface DataIndicatorSystemNodeService extends IService<DataIndicatorSystemNode> {
 
 }

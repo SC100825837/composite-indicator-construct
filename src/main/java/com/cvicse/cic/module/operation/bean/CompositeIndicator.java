@@ -18,7 +18,7 @@ public class CompositeIndicator {
     /**
      * 综合指标架构对象id
      */
-    private Long ciFrameworkObjectId;
+    private Long DataIndicatorSystemId;
 
     /**
      * 计算得到的综合指标

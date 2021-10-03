@@ -2,23 +2,24 @@ package com.cvicse.cic.module.operation.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cvicse.cic.module.algorithm.service.AlgorithmService;
-import com.cvicse.cic.module.datasource.service.CiConstructTargetService;
-import com.cvicse.cic.module.datasource.service.CiFrameworkIndicatorService;
-import com.cvicse.cic.module.datasource.service.CiFrameworkObjectService;
-import com.cvicse.cic.module.datasource.service.CiFrameworkTreepathService;
+import com.cvicse.cic.module.datasource.service.DataIndicatorSystemDataService;
+import com.cvicse.cic.module.datasource.service.DataIndicatorSystemNodeService;
+import com.cvicse.cic.module.datasource.service.DataIndicatorSystemService;
+import com.cvicse.cic.module.datasource.service.DataIndicatorSystemTreepathService;
 import com.cvicse.cic.module.view.bean.CalcExecParamDTO;
 import com.cvicse.cic.module.view.bean.CalcResultGraphDTO;
 import com.cvicse.cic.module.view.bean.ECharts.CoordinateDTO;
 import com.cvicse.cic.module.view.bean.GraphDTO;
 import com.cvicse.cic.module.view.bean.ProcessResultDTO;
-import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkObject;
-import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemData;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemNode;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystem;
+import com.cvicse.cic.module.datasource.bean.DataIndicatorSystemTreepath;
 import com.cvicse.cic.module.view.bean.GraphEdge;
 import com.cvicse.cic.module.view.bean.GraphNode;
 import com.cvicse.cic.util.AlgorithmConstants;
 import com.cvicse.cic.util.AlgorithmUtil;
+import com.cvicse.cic.util.exception.BusinessException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cvicse.cic.module.algorithm.bean.Algorithm;
@@ -42,16 +43,16 @@ public class IndicatorsServiceImpl {
     private AlgorithmService algorithmService;
 
     @Autowired
-    private CiConstructTargetService ciConstructTargetService;
+    private DataIndicatorSystemDataService dataIndicatorSystemDataService;
 
     @Autowired
-    private CiFrameworkObjectService ciFrameworkObjectService;
+    private DataIndicatorSystemService dataIndicatorSystemService;
 
     @Autowired
-    private CiFrameworkIndicatorService ciFrameworkIndicatorService;
+    private DataIndicatorSystemNodeService dataIndicatorSystemNodeService;
 
     @Autowired
-    private CiFrameworkTreepathService ciFrameworkTreepathService;
+    private DataIndicatorSystemTreepathService dataIndicatorSystemTreepathService;
 
     /**
      * 基础图对象的缓存集合(平铺结构)，只包含基础结构的节点
@@ -86,7 +87,7 @@ public class IndicatorsServiceImpl {
     /**
      * 数据库查询的构建对象缓存
      */
-    private List<CiConstructTarget> ciConstructTargetList = new ArrayList<>();
+    private List<DataIndicatorSystemData> dataIndicatorSystemDataList = new ArrayList<>();
 
     /**
      * 综合指数构建对象集合缓存
@@ -144,16 +145,16 @@ public class IndicatorsServiceImpl {
      *
      * @return
      */
-    public GraphDTO getBaseGraph(Long ciFrameworkObjectId) {
+    public GraphDTO getBaseGraph(Long dataIndicatorSystemId) {
         //先从缓存中取数据，如果没有数据则重新构建
         if (!graphNodeList.isEmpty() && !graphEdgeList.isEmpty()) {
             return new GraphDTO(graphNodeList, graphEdgeList);
         }
 
         // 查询最大id
-        CiFrameworkIndicator indicatorWithMaxId = ciFrameworkIndicatorService.getBaseMapper()
-                .selectOne(new QueryWrapper<CiFrameworkIndicator>()
-                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+        DataIndicatorSystemNode indicatorWithMaxId = dataIndicatorSystemNodeService.getBaseMapper()
+                .selectOne(new QueryWrapper<DataIndicatorSystemNode>()
+                        .eq("data_indicator_system_id", dataIndicatorSystemId)
                         .orderByDesc("id")
                         .last("limit 1"));
         if (indicatorWithMaxId != null) {
@@ -162,9 +163,9 @@ public class IndicatorsServiceImpl {
 
 
         // 查询最大层级，把层级当做前端显示的类别
-        CiFrameworkIndicator indicatorWithMaxLevel = ciFrameworkIndicatorService.getBaseMapper()
-                .selectOne(new QueryWrapper<CiFrameworkIndicator>()
-                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+        DataIndicatorSystemNode indicatorWithMaxLevel = dataIndicatorSystemNodeService.getBaseMapper()
+                .selectOne(new QueryWrapper<DataIndicatorSystemNode>()
+                        .eq("data_indicator_system_id", dataIndicatorSystemId)
                         .orderByDesc("indicator_level")
                         .last("limit 1"));
 
@@ -172,7 +173,7 @@ public class IndicatorsServiceImpl {
             this.category = indicatorWithMaxLevel.getIndicatorLevel();
         }
 
-        CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
+        DataIndicatorSystem dataIndicatorSystem = dataIndicatorSystemService.getById(dataIndicatorSystemId);
 
         // 创建根节点
         GraphNode rootNode = new GraphNode();
@@ -185,19 +186,18 @@ public class IndicatorsServiceImpl {
         this.graphNodeList.add(rootNode);
 
         // 查询父子级别  也就是相邻的层级结构
-        List<CiFrameworkTreepath> treepathList = ciFrameworkTreepathService.getBaseMapper()
-                .selectList(new QueryWrapper<CiFrameworkTreepath>()
-                        .eq("ci_framework_object_id", ciFrameworkObjectId)
+        List<DataIndicatorSystemTreepath> treepathList = dataIndicatorSystemTreepathService.getBaseMapper()
+                .selectList(new QueryWrapper<DataIndicatorSystemTreepath>()
+                        .eq("data_indicator_system_id", dataIndicatorSystemId)
                         .eq("path_depth", 1));
 
         // 遍历层级结构，根据结构查询节点
-        for (CiFrameworkTreepath treepath : treepathList) {
+        for (DataIndicatorSystemTreepath treepath : treepathList) {
             // 查询后代位置的节点
-            CiFrameworkIndicator indicator = ciFrameworkIndicatorService
-                    .getOne(new QueryWrapper<CiFrameworkIndicator>()
-                            .eq("ci_framework_object_id", ciFrameworkObjectId)
-                            .eq("id", treepath.getDescendant())
-                            .lt("indicator_level", ciFrameworkObject.getDataFirstColumn()));
+            DataIndicatorSystemNode indicator = dataIndicatorSystemNodeService
+                    .getOne(new QueryWrapper<DataIndicatorSystemNode>()
+                            .eq("data_indicator_system_id", dataIndicatorSystemId)
+                            .eq("id", treepath.getDescendant()));
 
             if (indicator == null) {
                 continue;
@@ -207,9 +207,9 @@ public class IndicatorsServiceImpl {
             // 如果层级为1，说明这个结构代表excel的前两列，也就是第一和第二指标
             if (indicatorLevel.equals(1)) {
                 // 获取该结构的祖先级节点
-                CiFrameworkIndicator firstLevelIndicator = ciFrameworkIndicatorService
-                        .getOne(new QueryWrapper<CiFrameworkIndicator>()
-                                .eq("ci_framework_object_id", ciFrameworkObjectId)
+                DataIndicatorSystemNode firstLevelIndicator = dataIndicatorSystemNodeService
+                        .getOne(new QueryWrapper<DataIndicatorSystemNode>()
+                                .eq("data_indicator_system_id", dataIndicatorSystemId)
                                 .eq("id", treepath.getAncestor()));
                 if (firstLevelIndicator == null) {
                     continue;
@@ -217,7 +217,7 @@ public class IndicatorsServiceImpl {
                 // 创建excel中各一级指标节点
                 createBaseNode(firstLevelIndicator, rootNode.getId());
                 // 创建综合指数节点和excel中各一级指标节点的连线
-                createBaseEdge(new CiFrameworkTreepath(rootNode.getId(), firstLevelIndicator.getId(), 1, ciFrameworkObjectId));
+                createBaseEdge(new DataIndicatorSystemTreepath(rootNode.getId(), firstLevelIndicator.getId(), 1, dataIndicatorSystemId));
 
             }
             createBaseNode(indicator, treepath.getAncestor());
@@ -229,7 +229,7 @@ public class IndicatorsServiceImpl {
     /**
      * 创建节点
      */
-    private void createBaseNode(CiFrameworkIndicator indicator, Long parentId) {
+    private void createBaseNode(DataIndicatorSystemNode indicator, Long parentId) {
         GraphNode graphNode = new GraphNode();
         graphNode.setId(indicator.getId());
         graphNode.setCategory(indicator.getIndicatorLevel());
@@ -243,7 +243,7 @@ public class IndicatorsServiceImpl {
     /**
      * 创建连线
      */
-    private void createBaseEdge(CiFrameworkTreepath treepath) {
+    private void createBaseEdge(DataIndicatorSystemTreepath treepath) {
         Long targetId = treepath.getAncestor();
         Long sourceId = treepath.getDescendant();
         GraphEdge graphEdge = new GraphEdge();
@@ -271,7 +271,7 @@ public class IndicatorsServiceImpl {
 
     public CalcResultGraphDTO calcHandler(CalcExecParamDTO calcExecParam) throws RuntimeException {
         if (graphNodeList.isEmpty() || graphEdgeList.isEmpty()) {
-            throw new RuntimeException("数据异常，请尝试刷新页面");
+            throw new BusinessException("数据异常，请尝试刷新页面");
         }
         //初始化数据，然后执行处理算法
         Map<String, String> algorithmMap = null;
@@ -279,9 +279,9 @@ public class IndicatorsServiceImpl {
             algorithmMap = initAlgorithmAndConstructObj(calcExecParam);
         } catch (JsonProcessingException e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException("数据初始化异常");
+            throw new BusinessException("数据初始化异常");
         }
-        return handleDataAndAlgorithm(algorithmMap, calcExecParam.getTargetId(), calcExecParam.getCiFrameworkObjectId());
+        return handleDataAndAlgorithm(algorithmMap, calcExecParam.getTargetId(), calcExecParam.getDataIndicatorSystemId());
     }
 
     /**
@@ -305,25 +305,25 @@ public class IndicatorsServiceImpl {
         if (calcExecParam.getModifiedDataList() == null || calcExecParam.getModifiedDataList().length == 0) {
             //缓存中没有数据集的数据时从数据库取出并放入缓存
             if (this.originDataArray == null || this.originDataArray.length == 0) {
-                List<CiConstructTarget> ciConstructTargetList = ciConstructTargetService.list(
-                        new QueryWrapper<CiConstructTarget>()
-                                .eq("ci_framework_object_id", calcExecParam.getCiFrameworkObjectId()));
+                List<DataIndicatorSystemData> dataIndicatorSystemDataList = dataIndicatorSystemDataService.list(
+                        new QueryWrapper<DataIndicatorSystemData>()
+                                .eq("data_indicator_system_id", calcExecParam.getDataIndicatorSystemId()));
 
-                this.originDataArray = new Double[ciConstructTargetList.size()][];
+                this.originDataArray = new Double[dataIndicatorSystemDataList.size()][];
                 // 为了保证顺序和导入的excel一致，进行排序
-                this.ciConstructTargetList = ciConstructTargetList.stream()
-                        .sorted(Comparator.comparingInt(CiConstructTarget::getBelongColumnIndex))
+                this.dataIndicatorSystemDataList = dataIndicatorSystemDataList.stream()
+                        .sorted(Comparator.comparingInt(DataIndicatorSystemData::getBelongColumnIndex))
                         .collect(Collectors.toList());
                 // 创建原始数据集二维数组
-                for (int i = 0; i < this.ciConstructTargetList.size(); i++) {
-                    if (this.ciConstructTargetList.get(i).getId().equals(calcExecParam.getTargetId())) {
+                for (int i = 0; i < this.dataIndicatorSystemDataList.size(); i++) {
+                    if (this.dataIndicatorSystemDataList.get(i).getId().equals(calcExecParam.getTargetId())) {
                         this.targetObjLine = i;
                     }
-                    this.originDataArray[i] = new ObjectMapper().readValue(this.ciConstructTargetList.get(i).getData(), Double[].class);
+                    this.originDataArray[i] = new ObjectMapper().readValue(this.dataIndicatorSystemDataList.get(i).getDataValue(), Double[].class);
                 }
             } else {
-                for (int i = 0; i < this.ciConstructTargetList.size(); i++) {
-                    if (this.ciConstructTargetList.get(i).getId().equals(calcExecParam.getTargetId())) {
+                for (int i = 0; i < this.dataIndicatorSystemDataList.size(); i++) {
+                    if (this.dataIndicatorSystemDataList.get(i).getId().equals(calcExecParam.getTargetId())) {
                         this.targetObjLine = i;
                     }
                 }
@@ -342,11 +342,11 @@ public class IndicatorsServiceImpl {
      * @param algorithmMap 每一步的算法对象
      * @return
      */
-    public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long ciFrameworkObjectId) {
+    public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long DataIndicatorSystemId) {
         //判断数据集是否修改,没修改直接用缓存数据，修改了就重新计算
         //TODO 切换了算法也需要重新计算
         if (this.execResult == null || ifDataSetModified || ifAlgorithmModified) {
-            this.allFrameObjectComInxMap.remove(ciFrameworkObjectId);
+            this.allFrameObjectComInxMap.remove(DataIndicatorSystemId);
             //通过算法门面执行算法计算
             this.execResult = AlgorithmFacade.calculate(algorithmMap, this.originDataArray);
         }
@@ -359,10 +359,10 @@ public class IndicatorsServiceImpl {
 
         //初始化综合指标
         double compositeIndicator = 0;
-        LinkedHashMap<Long, Double> specifiedFrameObjectInxMap = this.allFrameObjectComInxMap.get(ciFrameworkObjectId);
+        LinkedHashMap<Long, Double> specifiedFrameObjectInxMap = this.allFrameObjectComInxMap.get(DataIndicatorSystemId);
         if (specifiedFrameObjectInxMap == null || specifiedFrameObjectInxMap.isEmpty()) {
             //计算所有构建对象的综合指标值
-            specifiedFrameObjectInxMap = calcAllConstructTarget(ciFrameworkObjectId, missDataImputationArr, baseIndicatorWeight);
+            specifiedFrameObjectInxMap = calcAllConstructTarget(DataIndicatorSystemId, missDataImputationArr, baseIndicatorWeight);
         }
         compositeIndicator = specifiedFrameObjectInxMap.get(targetId);
         /*//计算综合指标数值
@@ -373,9 +373,9 @@ public class IndicatorsServiceImpl {
         compositeIndicator = handleFractional(2, compositeIndicator);*/
 
         // 获取基础指标所在的excel列
-        int baseIndicatorNodeColumn = getBaseIndicatorNodeColumn(ciFrameworkObjectId);
+        int baseIndicatorNodeColumn = getBaseIndicatorNodeColumn(DataIndicatorSystemId);
         // 按顺序获取所有基础指标集合
-        List<CiFrameworkIndicator> baseIndicatorList = getBaseIndicatorList(ciFrameworkObjectId, baseIndicatorNodeColumn);
+        List<DataIndicatorSystemNode> baseIndicatorList = getBaseIndicatorList(DataIndicatorSystemId, baseIndicatorNodeColumn);
 
 
         // 找到缺失值插补计算之后的构建对象数据
@@ -405,46 +405,46 @@ public class IndicatorsServiceImpl {
      * @param missDataImputationArr
      * @param baseIndicatorWeight
      */
-    private LinkedHashMap<Long, Double> calcAllConstructTarget(Long ciFrameworkObjectId, Double[][] missDataImputationArr, Double[] baseIndicatorWeight) {
+    private LinkedHashMap<Long, Double> calcAllConstructTarget(Long DataIndicatorSystemId, Double[][] missDataImputationArr, Double[] baseIndicatorWeight) {
         LinkedHashMap<Long, Double> allTargetInxMap = new LinkedHashMap<>();
-        for (int i = 0; i < this.ciConstructTargetList.size(); i++) {
+        for (int i = 0; i < this.dataIndicatorSystemDataList.size(); i++) {
             double oneCompositeIndicator = 0D;
             for (int j = 0; j < baseIndicatorWeight.length; j++) {
                 oneCompositeIndicator += missDataImputationArr[i][j] * baseIndicatorWeight[j];
             }
-            allTargetInxMap.put(this.ciConstructTargetList.get(i).getId(), AlgorithmUtil.handleFractional(2, oneCompositeIndicator));
+            allTargetInxMap.put(this.dataIndicatorSystemDataList.get(i).getId(), AlgorithmUtil.handleFractional(2, oneCompositeIndicator));
         }
-        this.allFrameObjectComInxMap.put(ciFrameworkObjectId, allTargetInxMap);
+        this.allFrameObjectComInxMap.put(DataIndicatorSystemId, allTargetInxMap);
         return allTargetInxMap;
     }
 
     /**
      * 按顺序获取所有基础指标集合
-     * @param ciFrameworkObjectId
+     * @param DataIndicatorSystemId
      * @return
      */
-    private List<CiFrameworkIndicator> getBaseIndicatorList(Long ciFrameworkObjectId, int baseIndicatorNodeColumn) {
+    private List<DataIndicatorSystemNode> getBaseIndicatorList(Long DataIndicatorSystemId, int baseIndicatorNodeColumn) {
         // 虽然理论上插入数据库是按照excel顺序来插入的，但是稳妥起见还是排个序
-        return ciFrameworkIndicatorService.list(new QueryWrapper<CiFrameworkIndicator>()
-                .eq("ci_framework_object_id", ciFrameworkObjectId)
+        return dataIndicatorSystemNodeService.list(new QueryWrapper<DataIndicatorSystemNode>()
+                .eq("data_indicator_system_id", DataIndicatorSystemId)
                 .eq("indicator_level", baseIndicatorNodeColumn).eq("head_flag", 0))
                 .stream()
-                .sorted(Comparator.comparingLong(CiFrameworkIndicator::getId))
+                .sorted(Comparator.comparingLong(DataIndicatorSystemNode::getId))
                 .collect(Collectors.toList());
     }
 
     /**
      * 获取基础指标所在的excel列
-     * @param ciFrameworkObjectId
+     * @param DataIndicatorSystemId
      * @return
      */
-    private int getBaseIndicatorNodeColumn(Long ciFrameworkObjectId) {
+    private int getBaseIndicatorNodeColumn(Long DataIndicatorSystemId) {
         // 基础指标节点所在的列
         int baseIndicatorNodeColumn = 0;
-        CiFrameworkObject ciFrameworkObject = ciFrameworkObjectService.getById(ciFrameworkObjectId);
-        if (ciFrameworkObject != null) {
+        DataIndicatorSystem DataIndicatorSystem = dataIndicatorSystemService.getById(DataIndicatorSystemId);
+        if (DataIndicatorSystem != null) {
             // 基础指标节点所在的列 和 数据列 相邻
-            baseIndicatorNodeColumn = ciFrameworkObject.getDataFirstColumn() - 1;
+//            baseIndicatorNodeColumn = DataIndicatorSystem.getDataFirstColumn() - 1;
         }
         return baseIndicatorNodeColumn;
     }
@@ -527,23 +527,23 @@ public class IndicatorsServiceImpl {
      *
      * @return
      */
-    public Double[][] getOriginDataArray(Long targetId, Long ciFrameworkObjectId) {
+    public Double[][] getOriginDataArray(Long targetId, Long DataIndicatorSystemId) {
         //缓存中没有数据集的数据时从数据库取出并放入缓存
         if (this.originDataArray == null || this.originDataArray.length == 0) {
             // TODO 架构对象id
-            List<CiConstructTarget> ciConstructTargetList = ciConstructTargetService.list(
-                    new QueryWrapper<CiConstructTarget>()
-                            .eq("ci_framework_object_id", ciFrameworkObjectId));
+            List<DataIndicatorSystemData> dataIndicatorSystemDataList = dataIndicatorSystemDataService.list(
+                    new QueryWrapper<DataIndicatorSystemData>()
+                            .eq("data_indicator_system_id", DataIndicatorSystemId));
 
-            this.originDataArray = new Double[ciConstructTargetList.size()][];
+            this.originDataArray = new Double[dataIndicatorSystemDataList.size()][];
             // 为了保证顺序和导入的excel一致，进行排序
-            ciConstructTargetList = ciConstructTargetList.stream()
-                    .sorted(Comparator.comparingInt(CiConstructTarget::getBelongColumnIndex))
+            dataIndicatorSystemDataList = dataIndicatorSystemDataList.stream()
+                    .sorted(Comparator.comparingInt(DataIndicatorSystemData::getBelongColumnIndex))
                     .collect(Collectors.toList());
             // 创建原始数据集二维数组
-            for (int i = 0; i < ciConstructTargetList.size(); i++) {
+            for (int i = 0; i < dataIndicatorSystemDataList.size(); i++) {
                 try {
-                    this.originDataArray[i] = new ObjectMapper().readValue(ciConstructTargetList.get(i).getData(), Double[].class);
+                    this.originDataArray[i] = new ObjectMapper().readValue(dataIndicatorSystemDataList.get(i).getDataValue(), Double[].class);
                 } catch (JsonProcessingException e) {
                     log.error(e.getMessage(), e);
                 }
@@ -555,25 +555,25 @@ public class IndicatorsServiceImpl {
     /**
      * 拿到计算过程数据,封装对象并返回
      */
-    public ProcessResultDTO getProcessData(Long ciFrameworkObjectId) {
+    public ProcessResultDTO getProcessData(Long DataIndicatorSystemId) {
 
         if (this.execResult == null) {
             return null;
         }
-        return createWebDTO(ciFrameworkObjectId);
+        return createWebDTO(DataIndicatorSystemId);
     }
 
     /**
      * 拿到计算过程数据,封装对象并返回
      */
-    private ProcessResultDTO createWebDTO(Long ciFrameworkObjectId) {
+    private ProcessResultDTO createWebDTO(Long DataIndicatorSystemId) {
         //创建过程结果前端封装对象
         ProcessResultDTO processResultDTO = new ProcessResultDTO();
 
         //获取原始数据集
-        List<CiConstructTarget> targetNameList = ciConstructTargetService.list(new QueryWrapper<CiConstructTarget>()
+        List<DataIndicatorSystemData> targetNameList = dataIndicatorSystemDataService.list(new QueryWrapper<DataIndicatorSystemData>()
                 .select("target_name")
-                .eq("ci_framework_object_id", ciFrameworkObjectId));
+                .eq("data_indicator_system_id", DataIndicatorSystemId));
         List<Map<String, Double>> originDataList = new ArrayList<>();
         for (int i = 0; i < this.originDataArray.length; i++) {
             Map<String, Double> row = new LinkedHashMap<>();
@@ -780,7 +780,7 @@ public class IndicatorsServiceImpl {
         this.category = 0;
         this.checkExitMap.clear();
 
-        this.ciConstructTargetList.clear();
+        this.dataIndicatorSystemDataList.clear();
         this.originDataArray = null;
         this.targetObjLine = 0;
         this.baseIndicatorName = new ArrayList<>();
