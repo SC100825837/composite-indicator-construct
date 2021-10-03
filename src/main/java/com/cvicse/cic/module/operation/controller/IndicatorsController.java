@@ -3,7 +3,7 @@ package com.cvicse.cic.module.operation.controller;
 import com.cvicse.cic.module.view.bean.CalcResultGraphDTO;
 import com.cvicse.cic.module.view.bean.ProcessResultDTO;
 import com.cvicse.cic.module.operation.service.IndicatorsServiceImpl;
-import com.cvicse.cic.util.R;
+import com.cvicse.cic.util.ResultData;
 import com.cvicse.cic.module.view.bean.CalcExecParamDTO;
 import com.cvicse.cic.module.view.bean.GraphDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -21,33 +21,23 @@ public class IndicatorsController {
 	private IndicatorsServiceImpl indicatorsServiceImpl;
 
 	@GetMapping("/getBaseGraph/{ciFrameworkObjectId}")
-	public R getBaseGraph(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
-		GraphDTO baseGraph = indicatorsServiceImpl.getBaseGraph(ciFrameworkObjectId);
-		if (baseGraph == null) {
-			return R.failed("数据为空");
-		}
-		return R.ok(baseGraph);
+	public ResultData getBaseGraph(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+		return ResultData.success(indicatorsServiceImpl.getBaseGraph(ciFrameworkObjectId));
 	}
 
 	@PostMapping("/indicatorCalc")
-	public R execIndCalc(@RequestBody CalcExecParamDTO calcExecParam) {
-		CalcResultGraphDTO calcResultGraphDTO;
-		try {
-			calcResultGraphDTO = indicatorsServiceImpl.calcHandler(calcExecParam);
-		} catch (Exception e) {
-			log.error(e.getMessage(), e);
-			return R.failed(e.getMessage());
-		}
+	public ResultData execIndCalc(@RequestBody CalcExecParamDTO calcExecParam) {
+		CalcResultGraphDTO calcResultGraphDTO = indicatorsServiceImpl.calcHandler(calcExecParam);
 		if (calcResultGraphDTO == null) {
-			return R.failed("数据不存在");
+			return ResultData.fail("计算失败，请联系技术员");
 		}
-		return R.ok(calcResultGraphDTO, "计算完成，综合指标数值为：" + calcResultGraphDTO.getCompositeIndicator());
+		return ResultData.success(calcResultGraphDTO, "计算完成，综合指标数值为：" + calcResultGraphDTO.getCompositeIndicator());
 	}
 
 	@PostMapping("/calcMdComposite")
-	public R calcMdComposite(@RequestBody Map<String, Double> mdBaseIndicatorMap) {
+	public ResultData calcMdComposite(@RequestBody Map<String, Double> mdBaseIndicatorMap) {
 		Double mdComposite = indicatorsServiceImpl.calcModifyBaseIndicator(mdBaseIndicatorMap);
-		return R.ok(mdComposite, "计算完成");
+		return ResultData.success(mdComposite, "计算完成");
 	}
 
 	/*@GetMapping("/getOriginDataList/{targetId}")
@@ -60,21 +50,21 @@ public class IndicatorsController {
 	}*/
 
 	@GetMapping("/getProcessResult/{ciFrameworkObjectId}")
-	public R<ProcessResultDTO> getProcessResult(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+	public ResultData<ProcessResultDTO> getProcessResult(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
 		ProcessResultDTO processData = indicatorsServiceImpl.getProcessData(ciFrameworkObjectId);
 		if (processData == null) {
-			return R.failed("数据为空");
+			return ResultData.fail("数据为空");
 		}
-		return R.ok(processData);
+		return ResultData.success(processData);
 	}
 
 	@GetMapping("/resetData")
-	public R resetData() {
+	public ResultData resetData() {
 		boolean resetFlag = indicatorsServiceImpl.resetData();
 		if (resetFlag) {
-			return R.ok("数据已重置");
+			return ResultData.success("数据已重置");
 		} else {
-			return R.failed("数据重置失败，请重试");
+			return ResultData.fail("数据重置失败，请重试");
 		}
 	}
 

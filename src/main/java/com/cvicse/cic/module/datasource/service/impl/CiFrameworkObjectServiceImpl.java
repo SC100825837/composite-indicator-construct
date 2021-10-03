@@ -3,6 +3,7 @@ package com.cvicse.cic.module.datasource.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkObject;
+import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
 import com.cvicse.cic.module.datasource.service.CiFrameworkObjectService;
 import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator;
@@ -72,9 +73,12 @@ public class CiFrameworkObjectServiceImpl extends ServiceImpl<CiFrameworkObjectD
     public boolean deleteCiFrameworkObjectById(Long ciFrameworkObjectId) {
         // 这里分开删除用事务控制数据一致性，联表太慢
         this.removeById(ciFrameworkObjectId);
-        ciFrameworkIndicatorDao.deleteById(ciFrameworkObjectId);
-        ciFrameworkTreepathDao.deleteById(ciFrameworkObjectId);
-        ciConstructTargetService.removeById(ciFrameworkObjectId);
+        ciFrameworkIndicatorDao.delete(new QueryWrapper<CiFrameworkIndicator>()
+                .eq("ci_framework_object_id", ciFrameworkObjectId));
+        ciFrameworkTreepathDao.delete(new QueryWrapper<CiFrameworkTreepath>()
+                .eq("ci_framework_object_id", ciFrameworkObjectId));
+        ciConstructTargetService.remove(new QueryWrapper<CiConstructTarget>()
+                .eq("ci_framework_object_id", ciFrameworkObjectId));
         return true;
     }
 

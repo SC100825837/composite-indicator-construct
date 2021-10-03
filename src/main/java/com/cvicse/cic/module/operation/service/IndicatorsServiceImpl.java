@@ -149,8 +149,6 @@ public class IndicatorsServiceImpl {
         if (!graphNodeList.isEmpty() && !graphEdgeList.isEmpty()) {
             return new GraphDTO(graphNodeList, graphEdgeList);
         }
-        //每次需要重新构造数据时，初始化所有数据
-//        resetData();
 
         // 查询最大id
         CiFrameworkIndicator indicatorWithMaxId = ciFrameworkIndicatorService.getBaseMapper()
@@ -271,12 +269,19 @@ public class IndicatorsServiceImpl {
         }
     }
 
-    public CalcResultGraphDTO calcHandler(CalcExecParamDTO calcExecParam) throws Exception {
+    public CalcResultGraphDTO calcHandler(CalcExecParamDTO calcExecParam) throws RuntimeException {
         if (graphNodeList.isEmpty() || graphEdgeList.isEmpty()) {
-            throw new Exception("数据异常，请尝试刷新页面");
+            throw new RuntimeException("数据异常，请尝试刷新页面");
         }
         //初始化数据，然后执行处理算法
-        return handleDataAndAlgorithm(initAlgorithmAndConstructObj(calcExecParam), calcExecParam.getTargetId(), calcExecParam.getCiFrameworkObjectId());
+        Map<String, String> algorithmMap = null;
+        try {
+            algorithmMap = initAlgorithmAndConstructObj(calcExecParam);
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException("数据初始化异常");
+        }
+        return handleDataAndAlgorithm(algorithmMap, calcExecParam.getTargetId(), calcExecParam.getCiFrameworkObjectId());
     }
 
     /**
@@ -285,7 +290,7 @@ public class IndicatorsServiceImpl {
      * @param calcExecParam
      * @return
      */
-    private Map<String, String> initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) throws Exception {
+    private Map<String, String> initAlgorithmAndConstructObj(CalcExecParamDTO calcExecParam) throws RuntimeException, JsonProcessingException {
         //获取所有算法的id
         Map<String, Long> algorithmIdMap = calcExecParam.getAlgorithms().getAllAlgorithmIds();
         // 根据算法id查询算法对象
@@ -336,9 +341,8 @@ public class IndicatorsServiceImpl {
      *
      * @param algorithmMap 每一步的算法对象
      * @return
-     * @throws Exception
      */
-    public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long ciFrameworkObjectId) throws Exception {
+    public CalcResultGraphDTO handleDataAndAlgorithm(Map<String, String> algorithmMap, Long targetId, Long ciFrameworkObjectId) {
         //判断数据集是否修改,没修改直接用缓存数据，修改了就重新计算
         //TODO 切换了算法也需要重新计算
         if (this.execResult == null || ifDataSetModified || ifAlgorithmModified) {

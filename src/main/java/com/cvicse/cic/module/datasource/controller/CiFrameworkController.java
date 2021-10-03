@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkObject;
 import com.cvicse.cic.module.datasource.service.CiFrameworkObjectService;
-import com.cvicse.cic.util.R;
+import com.cvicse.cic.util.ResultData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -35,13 +35,13 @@ public class CiFrameworkController {
 	 * @return
 	 */
 	@GetMapping("/page")
-	public R<IPage> page(Page page, CiFrameworkObject ciFrameworkObject) {
-		return R.ok(ciFrameworkObjectService.page(page, Wrappers.query(ciFrameworkObject)));
+	public ResultData<IPage> page(Page page, CiFrameworkObject ciFrameworkObject) {
+		return ResultData.success(ciFrameworkObjectService.page(page, Wrappers.query(ciFrameworkObject)));
 	}
 
 	@GetMapping("/list")
-	public R<List<CiFrameworkObject>> getCiFrameworkObjectList() {
-		return R.ok(ciFrameworkObjectService.list());
+	public ResultData<List<CiFrameworkObject>> getCiFrameworkObjectList() {
+		return ResultData.success(ciFrameworkObjectService.list());
 	}
 
 	/**
@@ -51,9 +51,9 @@ public class CiFrameworkController {
 	 * @return
 	 */
 	@GetMapping("/previewExcelContent/{ciObjId}/{maxDepth}")
-	public R previewExcelContent(@PathVariable("ciObjId") Long ciObjId, @PathVariable("maxDepth") Integer maxDepth) {
+	public ResultData previewExcelContent(@PathVariable("ciObjId") Long ciObjId, @PathVariable("maxDepth") Integer maxDepth) {
 		List<Map<Integer, String>> excelContent = ciFrameworkObjectService.previewExcelContent(ciObjId, maxDepth);
-		return R.ok(excelContent);
+		return ResultData.success(excelContent);
 	}
 
 	/**
@@ -61,34 +61,34 @@ public class CiFrameworkController {
 	 * @return
 	 */
 	@GetMapping("getRecentlyId")
-	public R getRecentlyCiFrameworkObjectId() {
+	public ResultData getRecentlyCiFrameworkObjectId() {
 		Long recentlyCiFrameworkObjectId = ciFrameworkObjectService.getRecentlyCiFrameworkObjectId();
-		return R.ok(recentlyCiFrameworkObjectId);
+		return ResultData.success(recentlyCiFrameworkObjectId);
 	}
 
 	@GetMapping("/getCiFrameworkObjectInfo/{ciFrameworkObjectId}")
-	public R getCiFrameworkObjectInfo(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+	public ResultData getCiFrameworkObjectInfo(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
 		Map<String, Object> ciFrameworkObjectInfoMap;
 		try {
 			ciFrameworkObjectInfoMap = ciFrameworkObjectService.getCiFrameworkObjectInfo(ciFrameworkObjectId);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
-			return R.failed(e.getMessage());
+			return ResultData.fail(e.getMessage());
 		}
-		return R.ok(ciFrameworkObjectInfoMap);
+		return ResultData.success(ciFrameworkObjectInfoMap);
 	}
 
 	@GetMapping("/delete/{ciFrameworkObjectId}")
-	public R deleteCiFrameworkObject(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId, HttpServletRequest request) {
+	public ResultData deleteCiFrameworkObject(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId, HttpServletRequest request) {
 		log.info("ip地址为- " + request.getRemoteAddr() + " -的用户，发起了删除请求");
 		ciFrameworkObjectService.deleteCiFrameworkObjectById(ciFrameworkObjectId);
-		return R.ok();
+		return ResultData.success();
 	}
 
 	@GetMapping("switchFrameObj/{ciFrameworkObjectId}")
-	public R switchFrameObj(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
+	public ResultData switchFrameObj(@PathVariable("ciFrameworkObjectId") Long ciFrameworkObjectId) {
 		ciFrameworkObjectService.switchFrameObj(ciFrameworkObjectId);
-		return R.ok();
+		return ResultData.success();
 	}
 
 }

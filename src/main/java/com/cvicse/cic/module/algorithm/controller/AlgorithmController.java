@@ -1,7 +1,7 @@
 package com.cvicse.cic.module.algorithm.controller;
 
 import com.cvicse.cic.module.algorithm.bean.AlgorithmExecStep;
-import com.cvicse.cic.util.R;
+import com.cvicse.cic.util.ResultData;
 import com.cvicse.cic.module.algorithm.bean.Algorithm;
 import com.cvicse.cic.module.algorithm.service.AlgorithmService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,20 +26,12 @@ public class AlgorithmController {
     private AlgorithmService algorithmService;
 
     @GetMapping("/getAllAlgorithms")
-    public R<Map<String, List<Algorithm>>> getAllAlgorithmsByStepName() {
-        Map<String, List<Algorithm>> allAlgorithm = algorithmService.getAllAlgorithmsByStepName();
-        if (allAlgorithm.isEmpty()) {
-            return R.failed(null, "算法为空");
-        }
-        return R.ok(allAlgorithm);
+    public ResultData<Map<String, List<Algorithm>>> getAllAlgorithmsByStepName() {
+        return ResultData.success(algorithmService.getAllAlgorithmsByStepName());
     }
 
     @GetMapping("/getAllAlgorithmSteps")
-    public R<List<AlgorithmExecStep>> getAllAlgorithmSteps() {
-        List<AlgorithmExecStep> allAlgorithmSteps = algorithmService.getAllAlgorithmSteps();
-        if (allAlgorithmSteps.isEmpty()) {
-            return R.failed(null, "数据为空");
-        }
-        return R.ok(allAlgorithmSteps);
+    public ResultData<List<AlgorithmExecStep>> getAllAlgorithmSteps() {
+        return ResultData.success(algorithmService.getAllAlgorithmSteps());
     }
 }

@@ -5,13 +5,10 @@ import com.cvicse.cic.module.datasource.bean.CiConstructTarget;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkIndicator;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkObject;
 import com.cvicse.cic.module.datasource.bean.CiFrameworkTreepath;
-import com.cvicse.cic.module.datasource.service.CiFrameworkObjectService;
+import com.cvicse.cic.module.datasource.service.*;
 import com.cvicse.cic.util.excel.NoModelDataListener;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.cvicse.cic.module.datasource.service.CiFrameworkIndicatorService;
-import com.cvicse.cic.module.datasource.service.CiFrameworkTreepathService;
-import com.cvicse.cic.module.datasource.service.CiConstructTargetService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +22,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-public class FileServiceImpl {
+public class FileServiceImpl implements FileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileServiceImpl.class);
 
@@ -46,8 +43,9 @@ public class FileServiceImpl {
      * @param file
      * @return
      */
+    @Override
     @Transactional
-    public boolean resolveUploadExcel(MultipartFile file) throws Exception {
+    public boolean resolveExcel(MultipartFile file) {
         List<Map<Integer, String>> excelDataList = new ArrayList<Map<Integer, String>>();
         try {
             //解析excel
@@ -57,7 +55,7 @@ public class FileServiceImpl {
             return true;
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            throw new Exception("上传失败，请检查文件是否符合要求。");
+            throw new RuntimeException("上传失败，请检查文件是否符合要求。");
         }
     }
 
@@ -224,6 +222,7 @@ public class FileServiceImpl {
      * <p>2. 由于默认一行行的读取excel，所以需要创建excel一行一行的回调监听器，参照{@link }
      * <p>3. 直接读即可
      */
+    @Override
     public boolean resolveLocalExcel() throws FileNotFoundException {
 
         //获取根目录

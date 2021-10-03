@@ -31,6 +31,9 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmDao, Algorithm> i
     public Map<String, List<Algorithm>> getAllAlgorithmsByStepName() {
         //数据库查询所有算法
         List<Algorithm> allAlgorithms = algorithmDao.getAllAlgorithms();
+        if (allAlgorithms.isEmpty()) {
+            throw new RuntimeException("算法为空");
+        }
         //按照步骤名称分组
         Map<String, List<Algorithm>> allAlgorithmsByStepName = allAlgorithms.stream()
                 .collect(Collectors.groupingBy(Algorithm::getStepName));
@@ -47,6 +50,10 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmDao, Algorithm> i
 
     @Override
     public List<AlgorithmExecStep> getAllAlgorithmSteps() {
-        return algorithmExecStepDao.getAllAlgorithmSteps();
+        List<AlgorithmExecStep> allAlgorithmSteps = algorithmExecStepDao.getAllAlgorithmSteps();
+        if (allAlgorithmSteps.isEmpty()) {
+            throw new RuntimeException("算法为空");
+        }
+        return allAlgorithmSteps;
     }
 }
