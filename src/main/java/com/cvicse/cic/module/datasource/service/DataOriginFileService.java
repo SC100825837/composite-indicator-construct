@@ -15,7 +15,7 @@ public interface DataOriginFileService extends IService<DataOriginFile> {
      */
     void handleExcel(MultipartFile file);
 
-    void uploadToMinio(MultipartFile file, String bucketName);
+    boolean uploadToMinio(MultipartFile file, String bucketName) throws Exception;
 
     /**
      * 解析本地部署环境中的excel

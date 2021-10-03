@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -67,25 +68,25 @@ public class DataOriginFileServiceImpl extends ServiceImpl<DataOriginFileDao, Da
             // 校验
             checkExcel(file, excelDataList);
 
-            // 保存到数据库
-            FutureTask<DataIndicatorSystem> futureTask = new FutureTask<>(() -> saveExcelDataToDB(file, excelDataList));
-            new Thread(futureTask, "saveExcelDataToDBThread").start();
+            // 异步保存excel文件到文件服务器,先进行服务器上传操作的理由是，当上传失败就不执行后续的数据库操作了，只有上传成功才会有后续数据库操作
+            FutureTask<Boolean> futureTask = new FutureTask<>(() -> uploadToMinio(file, CommonConstant.BUCKET_NAME));
+            new Thread(futureTask, "uploadToMinio").start();
 
-            // 保存excel文件到文件服务器
-            uploadToMinio(file, CommonConstant.BUCKET_NAME);
+            //保存到数据库
+            DataIndicatorSystem dataIndicatorSystem = saveExcelDataToDB(file, excelDataList);
+            // 保存源文件记录
             DataOriginFile dataOriginFile = new DataOriginFile(null, file.getOriginalFilename(), CommonConstant.BUCKET_NAME, file.getOriginalFilename(), null, LocalDateTime.now());
             this.save(dataOriginFile);
-            // 从异步任务获取保存的指标体系对象，并设置关联源文件的id
-            DataIndicatorSystem dataIndicatorSystem = futureTask.get();
             dataIndicatorSystem.setOriginFileId(dataOriginFile.getId());
             // 更新指标体系关联的源文件id
             dataIndicatorSystemService.updateById(dataIndicatorSystem);
+            futureTask.get();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new BusinessException("文件解析失败，请联系技术人员。");
         } catch (InterruptedException | ExecutionException e) {
             log.error(e.getMessage(), e);
-            throw new BusinessException("保存数据库失败，请联系技术人员。");
+            throw new BusinessException("文件上传服务器失败，请联系技术人员。");
         }
     }
 
@@ -281,14 +282,10 @@ public class DataOriginFileServiceImpl extends ServiceImpl<DataOriginFileDao, Da
     }
 
     @Override
-    public void uploadToMinio(MultipartFile file, String bucketName) {
-        try {
-            minioTemplate.createBucket(CommonConstant.BUCKET_NAME);
-            minioTemplate.putObject(CommonConstant.BUCKET_NAME, file.getOriginalFilename(), file.getInputStream());
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new BusinessException("文件上传服务器失败，请联系技术人员。");
-        }
+    public boolean uploadToMinio(MultipartFile file, String bucketName) throws Exception {
+        minioTemplate.createBucket(CommonConstant.BUCKET_NAME);
+        minioTemplate.putObject(CommonConstant.BUCKET_NAME, file.getOriginalFilename(), file.getInputStream());
+        return true;
     }
 
     /**

@@ -49,8 +49,7 @@ public class MinioTemplate implements InitializingBean {
      * @param bucketName
      * @return
      */
-    @SneakyThrows
-    public boolean bucketExists(String bucketName) {
+    public boolean bucketExists(String bucketName) throws Exception {
         BucketExistsArgs bucketExistsArgs = BucketExistsArgs.builder().bucket(bucketName).build();
         return minioClient.bucketExists(bucketExistsArgs);
     }
@@ -99,8 +98,7 @@ public class MinioTemplate implements InitializingBean {
      *
      * @param bucketName bucket名称
      */
-    @SneakyThrows
-    public void createBucket(String bucketName) {
+    public void createBucket(String bucketName) throws Exception {
         if (!bucketExists(bucketName)) {
             minioClient.makeBucket(MakeBucketArgs.builder()
                     .bucket(bucketName)
@@ -181,8 +179,7 @@ public class MinioTemplate implements InitializingBean {
      * @param inputStream
      * @return
      */
-    @SneakyThrows
-    public ObjectWriteResponse putObject(String bucketName, String objectName, InputStream inputStream) throws Exception {
+    public ObjectWriteResponse putObject(String bucketName, String objectName, InputStream inputStream) throws IOException, MinioException, GeneralSecurityException {
         return minioClient.putObject(PutObjectArgs.builder()
                 .bucket(bucketName)
                 .object(objectName)
